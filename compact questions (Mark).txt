@@ -1,0 +1,30 @@
+How does your degree program typically work?  What are the milestones and the typical timeframe for achieving them?
+    > My degree program, an M.S., typically lasts two years. There are three major milestones during that time:
+        1. Thesis proposal (2nd or 3rd semester)
+        2. Course work completion (3rd semester)
+        3. Thesis defense (4th semester)
+    > I'm currently in my 3rd semester.
+
+What are your expectations for this project in relation to where you are in your program?
+    > I'm trying to position this paper as a nice compliment to my thesis. This work won't be necessary for my graduation. Instead it will hopefully add to my thesis in someway and increase the breadth of research available to me after graduation. My thesis proposal is building an autonomous assistive agent using IRL. Very similar but without any attention to ethical questions.
+
+How does your relationship with your advisor work?
+    > My advisor is happy with staying hands off with my research. Being as early as I am though still with research I do seek his input a lot myself. He tends to offer a lot of constructive criticism when I do seek his opinion, and I have found it to be very helpful so far.
+
+What is your working style?  What do I need to know about your typical schedule?
+    >
+
+How will we resolve our disagreements?  
+    >
+    
+What are our professional responsibilities to one another, and how will we maintain them?  
+    >
+
+What are our goals for the completion of this work?
+    > I would like... 
+        ... a working implementation of our algorithms
+        ... two papers? (One philosophy oriented, one machine learning oriented)
+    >
+
+
+How will we share credit for this work?  
