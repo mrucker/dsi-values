@@ -1,0 +1,31 @@
+Two definitions of Paternalism
+	> Contrary to Will Criterion
+		> "No Will", Can be "avoided" by not informing the other person and acting alone. This means the other person won't have a will to violate. (aka, acting with autonomy)
+		> "Accidental Accordance", Doesn't appropriately deal with behavior that has a paternalistic intent though is not actually paternalistic.
+	> Decisive Reason Criterion
+		> Competent Will
+			> Authoritative Grounding
+		> Incompetent Will
+			> Decisive Weight
+				> Derivative Good
+				> NonDerivative Good
+			
+Autonomy as "Right" vs "Good" (authoritative vs decisive)
+	"For in this dispute, one party is making the point that we cannot respect the patient’s autonomy as right, while the other side is making the point that we can respect the patient’s autonomy as part of his good. And these points are not only compatible but, I would suggest, correct."
+	
+
+Substantially decisive or Structurally Decisive	 (informative vs authoritative)
+
+Decisive Reason Criterion
+	> a means by which to identify paternalism without neccesarily determinning when paternalism is or isn't appropriate
+	> "A acts paternalistically toward B when A acts for the sake of B’s good but does not treat B’s will as structurally decisive in determining what she, A, should do."
+	
+Authority Account
+	> Acting paternalistically is unjustified when the paternalizing agent does not treat another person’s will as structurally decisive in determining what to do, even though the other person has a will that grounds an authoritative demand with respect to the issue at hand.
+Authority* Account
+	> Acting paternalistically is unjustified when the paternalizing agent does not treat the will of another, whose will is intact (and so grounds authoritative demands with respect to the person’s own good), as structurally decisive in determining what to do.
+	
+Paternalism Issues only arise when acting "for the good" of somebody else. Making decisions that affect others for reasons that have nothing to do with the good of others aren't paternalistic. Even if those decisions go against the wills of others.
+	> See Eleanor's example on page 712
+	
+"The idea is that you can legitimately demand that I not make decisions that are motivated solely by concern for your good."
