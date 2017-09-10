@@ -12,19 +12,19 @@ How does your relationship with your advisor work?
     > My advisor is happy with staying hands off with my research. Being as early as I am though still with research I do seek his input a lot myself. He tends to offer a lot of constructive criticism when I do seek his opinion, and I have found it to be very helpful so far.
 
 What is your working style?  What do I need to know about your typical schedule?
-    >
+    > I'm very busy with courses at the moment so my availability for this project is inconsistent at best. It really depends on the amount of homework I have do in my courses from week to week. I am trying to get a little done every week regardless, and I've liked our weekly meetings since it forces me to do something. I'm not a huge morning person and typically work from around 10:00 - 7:00 M-F and then 11:00-3:00 on Saturday and Sunday.
 
 How will we resolve our disagreements?  
-    >
+    > So far we've been able to talk through the or adjust the research. Our practice of adjusting the research to fit both our fields makes me a little nervous that we are going to get something watered down or less impactful in the end. Still, I'm not sure how else to work through some of these issues and it has seemed ok so far.
     
 What are our professional responsibilities to one another, and how will we maintain them?  
-    >
+    > Show up at our agreed meetings
+    > Make progress on the project
 
 What are our goals for the completion of this work?
     > I would like... 
         ... a working implementation of our algorithms
         ... two papers? (One philosophy oriented, one machine learning oriented)
-    >
 
-
-How will we share credit for this work?  
+How will we share credit for this work?
+    > On the ML paper I thought I could be first author and Derek second while on the philosophy paper we reverse that order?
