@@ -1,0 +1,19 @@
+What if there simply is no good content?
+Without user input wouldn't we get stuck in a loop? Like a gridworld where we never leave our starting square.
+
+Multi-armed contextual bandit. Choose the best action
+    > Both the user and the action have context
+
+What is our payoff?
+    > User selects our recommendation?
+    > Did you enjoy 
+    > Are you glad we made our recommendations?
+    > User likes their interaction with our recommender?
+    
+Do previous actions change the payout for an arm?
+    > 
+
+Does HTML5 API provide access to phone sensors?
+    > Yes
+    
+We're recommending behavior not a rating

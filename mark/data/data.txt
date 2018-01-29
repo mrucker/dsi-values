@@ -1,0 +1,66 @@
+Data
+    MovieLens  [last updated 8/2017, static file]           (https://grouplens.org/datasets/movielens/latest/)
+    TheMovieDB [find out what content is available]         (https://www.themoviedb.org/documentation/api) 
+    FanTv      [find out where to watch content]            (https://platform.fan.tv/#api) 
+    OpemMovieDB                                             (https://www.omdbapi.com/)
+    IMDb       [updated daily, static file download]        (http://www.imdb.com/interfaces/)
+    JustWatch  [doesn't have an api but says they use OMDb]
+    Tag Genome [a dense feature matrix for movies]          (https://grouplens.org/datasets/movielens/)
+
+MovieLens (downloadable data)
+    > Movie Features
+        >> Tag-Genome relevance (1,128 tags, continuous from 0-1)
+        >> Genres
+            * Action
+            * Adventure
+            * Animation
+            * Children's
+            * Comedy
+            * Crime
+            * Documentary
+            * Drama
+            * Fantasy
+            * Film-Noir
+            * Horror
+            * Musical
+            * Mystery
+            * Romance
+            * Sci-Fi
+            * Thriller
+            * War
+            * Western
+            * (no genres listed)
+        >> Publication Year
+        >> User Ratings (0-5 with increments of .5)
+    > User Features
+        >> Movie Ratings
+        >> Movie Rating Timestamp
+        
+        
+    
+TheMovieDB (public API)
+    > Movie Features
+        >> Primary info
+        >> Alternative titles
+        >> Cast
+        >> Crew
+        >> Images (posters, backdrops)
+        >> Plot keywords
+        >> Release information
+        >> Trailers
+        >> Translations
+        >> Similiar movies
+        >> Reviews
+        >> Belongs to lists
+        >> Changes
+    > People Features
+        >> Primary info
+        >> Changes
+        >> Credits (movie, TV and combined)
+        >> Images (profile)
+        >> Tagged images
+    > Genre Features
+        >> Movies
+    > Plot Keyword Features
+        >> Movies
+

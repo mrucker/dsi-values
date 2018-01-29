@@ -1,0 +1,3 @@
+Things I Need To Do    
+    > What NLP approach is Woebot using
+    > Applications of Reinforcement Learning
