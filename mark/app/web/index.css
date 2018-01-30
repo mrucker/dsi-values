@@ -1,0 +1,39 @@
+* {
+    margin : 0; 
+    padding: 0;
+    /*border : 1px solid;*/
+}
+
+body {
+    background-color: #242F40;
+    font-family: 'Open Sans'
+}
+
+#toolbar {
+    background-color: #CCA43B;
+    height          : 25px;
+    /*overflow        : hidden;*/
+}
+
+#toolbar .left {
+    float: left;
+}
+#toolbar .right {
+    float: right;
+}
+
+#toolbar span {
+    padding: 1px 5px 1px 5px
+}
+
+#toolbar a {    
+    text-decoration: none;
+    color: #E5E5E5;
+}
+
+#splash {
+    margin: 50px 0 0 50px;
+    color: #E5E5E5;
+}
+
+/*https://coolors.co/363636-242f40-cca43b-e5e5e5-ffffff*/
