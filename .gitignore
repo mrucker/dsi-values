@@ -1,4 +1,5 @@
-**/proposal/
+
+**/ml-latest/**
 
 ##Ignore Visual Studio temp files
 *.vs
