@@ -1,3 +1,13 @@
+$(document).ready( function () {
+    var gracenote   = new Gracenote();
+    var fandango    = new Fandango();
+    var amctheaters = new AMCtheaters();
+    
+    gracenote.test();
+    //fandango.test();
+    //amctheaters.test();
+});
+
 function onSignIn(googleUser) {
     // Useful data for your client-side scripts:
     var profile = googleUser.getBasicProfile();

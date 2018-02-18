@@ -1,1 +1,1 @@
-aws s3 sync website s3://dsi.markrucker.net/ --delete
+aws s3 sync web s3://dsi.markrucker.net/ --delete

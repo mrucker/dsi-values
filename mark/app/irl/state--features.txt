@@ -1,0 +1,24 @@
+user  time      -- hour of day UCT (0-23)
+user  DOW       -- Sunday-Saturday (1-07)
+user  location  -- ???
+movie source    -- (Netflix, Hulu, Amazon Prime, Theater)
+movie genre 1   -- (~1-20)
+movie genre 2   -- (~1-19)
+movie genre 3   -- (~1-18)
+movie genre 4   -- (~1-17)
+movie director  -- (~100)
+movie actor 1   -- (~1-50)
+movie actor 2   -- (~1-50)
+movie actor 3   -- (~1-50)
+movie actor 4   -- (~1-50)
+movie budget    -- (100+k-100+M) (~10?)
+movie age       -- {opening, weeks, months, years}
+movie price     -- (integers [0-19])
+movie crit rate -- (A,B,C)
+movie pub  rate -- (A,B,C)
+movie rating    -- (G, PG, PG-13, R, NC-17)
+
+This set up gives a state space of 24*7*4*20*19*18*17*100*50^4*10*4*20*3*3 = 5.626 * 10^21
+
+
+We don't have to perfectly know their reward function to be helpful. (i.e., let them search as well as recommend)

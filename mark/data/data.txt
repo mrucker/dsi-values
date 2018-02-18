@@ -6,6 +6,7 @@ Data
     IMDb       [updated daily, static file download]        (http://www.imdb.com/interfaces/)
     JustWatch  [doesn't have an api but says they use OMDb]
     Tag Genome [a dense feature matrix for movies]          (https://grouplens.org/datasets/movielens/)
+    Fandango   [movie theater locations and movies]
 
 MovieLens (downloadable data)
     > Movie Features
@@ -35,7 +36,6 @@ MovieLens (downloadable data)
     > User Features
         >> Movie Ratings
         >> Movie Rating Timestamp
-        
         
     
 TheMovieDB (public API)
