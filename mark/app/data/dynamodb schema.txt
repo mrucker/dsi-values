@@ -14,11 +14,10 @@ DsiTheaters
     > Name
     
 DsiShowTimes
-    > Id
-    > DsiMovieId
-    > Date
-    > Time
+    > Id = TheaterId + MovieId + DateTime
+    > MovieId
     > TheaterId
+    > DateTime
     > Matinee
     
 DsiUser
