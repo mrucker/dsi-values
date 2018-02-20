@@ -1,0 +1,30 @@
+DsiMovies
+    > Id
+    > TMDbId
+    > ImgURL
+    > Budget
+    > Top3Actors
+    > Genre
+    > IMDbRating
+    > MetaCriticRating
+    > ParentalAdvisory
+
+DsiTheaters
+    > Id
+    > Name
+    
+DsiShowTimes
+    > Id
+    > DsiMovieId
+    > Date
+    > Time
+    > TheaterId
+    > Matinee
+    
+DsiUser
+
+DsiUserChoices
+    > Id
+    > Date
+    > DsiMovieId
+    > DsiShowTimeId

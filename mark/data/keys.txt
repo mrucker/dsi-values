@@ -1,6 +1,12 @@
-The Movie DB (developers.themoviedb.org)   
-    V3 Auth: 3abae1df4ebecc705375ee1265bbf63b (V3)    
-    V4 Auth: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzYWJhZTFkZjRlYmVjYzcwNTM3NWVlMTI2NWJiZjYzYiIsInN1YiI6IjVhN2Y1MWE2YzNhMzY4MTg5ZjAxMGZmZCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.ZLoxmYBqiY10ukH3paDTbElcIvAEIXUHWc4Cy3smO_w 
+The Movie DB (developers.themoviedb.org)
+    V3 Auth: 3abae1df4ebecc705375ee1265bbf63b
+    V4 Auth: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJhdWQiOiIzYWJhZTFkZjRlYmVjYzcwNTM3NWVlMTI2NWJiZjYzYiIsInN1YiI6IjVhN2Y1MWE2YzNhMzY4MTg5ZjAxMGZmZCIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.ZLoxmYBqiY10ukH3paDTbElcIvAEIXUHWc4Cy3smO_w
+
+    https://api.themoviedb.org/3/search/movie?api_key=3abae1df4ebecc705375ee1265bbf63b&language=en-US&query=Black%20Panther&page=1&include_adult=false&year=2018
+        > path given returned JSON to the movie id: <root>.results[1].id
+        > <root>.results[1].poster_path
+        
+    https://image.tmdb.org/t/p/w500/zI0q2ENcQOLECbe0gAEGlncVh2j.jpg
 
 Fandango (https://developer.fandango.com)
     key: 4ed8sh7yxqxffsbawzfzhj88
@@ -11,11 +17,16 @@ OMDb API (http://www.omdbapi.com/)
         
 AMC (http://developers.amctheatres.com)
     X-AMC-Vendor-Key: 7900EC65-85E1-4652-95D3-14F444F4211B
-    https://api.amctheatres.com
-    
-Gracenote ()
-    Key
-        e3rbxbs6mjp8mhk9wfz8e6gv        
-        http://data.tmsapi.com/v1.1/theatres?zip=22903&api_key=e3rbxbs6mjp8mhk9wfz8e6gv
-        
-        "You have been granted access to our Public plan which allows you to sample the following API methods: New Shows Airing on TV, Movies Airing on TV, Sports Events Airing on TV, and Movies Playing in Local Theatres. If you would like additional access, please contact us for approval."
+    curl.exe -v "https://api.amctheatres.com/v2/theatres/amc-studio-30" --header "X-AMC-Vendor-Key: 7900EC65-85E1-4652-95D3-14F444F4211B"
+
+Gracenote (http://developer.tmsapi.com)
+    e3rbxbs6mjp8mhk9wfz8e6gv    
+    https://data.tmsapi.com/v1.1/movies/showings?startDate=2018-02-15&zip=22903&api_key=e3rbxbs6mjp8mhk9wfz8e6gv
+    --documentation for above api request [http://developer.tmsapi.com/docs/data_v1_1/movies/Movies_playing_in_local_theatres]
+
+    "You have been granted access to our Public plan which allows you to sample the following API methods:
+        > New Shows Airing on TV,
+        > Movies Airing on TV,
+        > Sports Events Airing on TV,
+        > Movies Playing in Local Theatres
+    If you would like additional access, please contact us for approval."
