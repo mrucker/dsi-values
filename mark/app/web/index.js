@@ -1,5 +1,10 @@
 $(document).ready( function () {
     AWS.config.region = 'us-east-1';
+    
+    initMain();
+    
+    showSplash();
+    hideMain();
 });
 
 function gapiInit() {
@@ -22,20 +27,19 @@ function onSignIn(googleUser) {
     dynamodb.scan({'TableName':'DSI_Theaters'}, function(err, data) {
     
     });
-    
-    $("#toolbar .left" ).html('<a href="#"> Ethical Recommendations </a>');
-    $("#toolbar .right").html('<a href="#" onclick="onSignOut();">Sign out</a>');
-    
-    $("#splash").css("display","none");
+
+    showMain();
+    hideSplash();
 };
 
 function onSignOut() {    
-    gapi.auth2.getAuthInstance().signOut().then(function () { console.log('User signed out.'); });
+            
+    gapi.auth2.getAuthInstance().signOut();
     
-    $("#toolbar .left" ).html('');
-    $("#toolbar .right").html('');
+    hideMain();
+    showSplash();
     
-    $("#splash").css("display","block");
+    return true;
 }
 
 function setAWSCredentials(loginEmail, googleToken) {
@@ -70,4 +74,84 @@ function setAWSCredentials(loginEmail, googleToken) {
       // and multiple users are signed in at once, used for caching
       LoginId: loginEmail
     });
+}
+
+function showSplash() {
+    $('#splash').css('display','block');
+}
+
+function hideSplash() {
+    $('#splash').css('display','none');
+}
+
+function initMain() {
+    $('#toolbar .left' ).html('<a href="https://dsi.markrucker.net" class="strong"> Ethical Recommendations </a> <span>' + getDateSelect() + '</span>');
+    $('#toolbar .right').html('<a href="https://dsi.markrucker.net" class="hover" onclick="onSignOut();">Sign out</a>');
+    
+    getTheaters().forEach(function(theater) {
+        $('#main').append('<div class="theater"><a href="' + theater.Url + '">' + theater.Name + '</a></div>')
+    });
+}
+
+function showMain() {
+    $("#toolbar span").css('display','inline');
+    $('#main').css('display','block');
+}
+    
+function hideMain() {
+    $("#toolbar span").css('display','none');
+    $('#main').css('display','none');
+}
+
+function getDateSelect() {
+    
+    var day0 = 'Today';
+    var day1 = 'Tomorrow';
+    var day2 = dayAsText(new Date().getDay() + 2);
+    var day3 = dayAsText(new Date().getDay() + 3);
+    var day4 = dayAsText(new Date().getDay() + 4);
+    
+    
+    return '<select>' 
+         +    '<option>' + day0 + '</option>'
+         +    '<option>' + day1 + '</option>'
+         +    '<option>' + day2 + '</option>'
+         +    '<option>' + day3 + '</option>'
+         +    '<option>' + day4 + '</option>'
+         + '</select>';
+        
+}
+
+function dayAsText(day) {
+
+    day = day % 7;
+
+    if(day == 0) return 'Sunday';
+    if(day == 1) return 'Monday';
+    if(day == 2) return 'Tuesday';
+    if(day == 3) return 'Wednesday';
+    if(day == 4) return 'Thursday';
+    if(day == 5) return 'Friday';
+    
+    return 'Saturday';
+}
+
+function getTheaters() {
+    return [ 
+        {
+            'Id'  : '11542',
+            'Name': 'Alamo Drafthouse Cinema',
+            'Url' : 'https://drafthouse.com/charlottesville'
+        },
+        {
+            'Id'  : '11237',
+            'Name': 'Violet Crown Charlottesville',
+            'Url' : 'https://charlottesville.violetcrown.com/'
+        },
+        {
+            'Id'  : '10657',
+            'Name': 'Regal Stonefield Stadium 14',
+            'Url' : 'https://www.regmovies.com/theaters/regal-stonefield-stadium-14-imax/C00318790965'
+        }
+    ];
 }

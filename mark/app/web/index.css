@@ -22,22 +22,52 @@ body {
     float: right;
 }
 
+#toolbar .strong {
+    font-weight: bold;
+}
+
 #toolbar span {
     padding: 1px 5px 1px 5px
 }
 
-#toolbar a {
+#toolbar a:link {
     text-decoration: none;
     color: #363636;
 }
 
-#toolbar a:hover {    
+#toolbar a:visited {
+    color: #363636;
+}
+
+#toolbar  a.hover:hover {
     color: #E5E5E5;
 }
 
 #splash {
     margin: 50px 0 0 50px;
     color: #E5E5E5;
+}
+
+#main {
+    margin: 20px 0 0 20px;
+    color: #E5E5E5;
+}
+
+#main .theater {
+    margin: 10px 0 0 0;
+}
+
+#main .theater a:link {
+    text-decoration: none;
+    color: #E5E5E5;
+}
+
+#main .theater a:visited {
+    color: #FFFFFF;
+}
+
+#main .theater a:hover {
+    color: #CCA43B;
 }
 
 /*https://coolors.co/363636-242f40-cca43b-e5e5e5-ffffff*/

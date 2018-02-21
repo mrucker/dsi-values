@@ -1,6 +1,6 @@
 Things I Need To Do
 
     Set up nightly AWS Lambda job to:
-        > Pull in latest theater times from Gracenote
+        X Pull in latest theater times from Gracenote
         > Lookup TMDB id
         > Lookup TMDB poster_path
