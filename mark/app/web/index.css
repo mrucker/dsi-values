@@ -70,4 +70,8 @@ body {
     color: #CCA43B;
 }
 
+#main .theater .movies {
+    margin: 2px 0 0 20px;
+}
+
 /*https://coolors.co/363636-242f40-cca43b-e5e5e5-ffffff*/

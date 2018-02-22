@@ -11,15 +11,17 @@ DsiMovies
 
 DsiTheaters
     > Id
-    > Name
+    > Name    
     
 DsiShowTimes
-    > Id = TheaterId + MovieId + DateTime
-    > MovieId
+    > Id = Date+TheaterId
     > TheaterId
-    > DateTime
-    > Matinee
-    
+    > Date
+    > Showtimes [list]
+        > Map
+            > MovieId
+            > Time
+            > Matinee    
 DsiUser
 
 DsiUserChoices

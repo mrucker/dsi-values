@@ -1,10 +1,17 @@
 $(document).ready( function () {
     AWS.config.region = 'us-east-1';
-    
+
+    //important to protect against memory overflow
+    cacheClearWholeCacheIfStale();
+    cacheCleanOldShowtimesByDate();
+    cacheCleanOldMoviesByShowtimes();
+
     initMain();
-    
     showSplash();
     hideMain();
+
+    $('#signOut').on('click', onSignOut);
+    $('#daySelector').on('change', loadMain);
 });
 
 function gapiInit() {
@@ -20,14 +27,10 @@ function gapiInit() {
 
 function onSignIn(googleUser) {
             
-    setAWSCredentials(googleUser.getBasicProfile().getEmail(), googleUser.getAuthResponse().id_token);
+    setAWSCredentials(googleUser.getBasicProfile().getEmail(), googleUser.getAuthResponse().id_token);    
     
-    var dynamodb = new AWS.DynamoDB();
+    loadMain();
     
-    dynamodb.scan({'TableName':'DSI_Theaters'}, function(err, data) {
-    
-    });
-
     showMain();
     hideSplash();
 };
@@ -85,11 +88,43 @@ function hideSplash() {
 }
 
 function initMain() {
-    $('#toolbar .left' ).html('<a href="https://dsi.markrucker.net" class="strong"> Ethical Recommendations </a> <span>' + getDateSelect() + '</span>');
-    $('#toolbar .right').html('<a href="https://dsi.markrucker.net" class="hover" onclick="onSignOut();">Sign out</a>');
+    $('#toolbar .left' ).html('<a href="https://dsi.markrucker.net" class="strong"> Ethical Recommendations </a> <span>' + getDaySelector() + '</span>');
+    $('#toolbar .right').html('<a href="https://dsi.markrucker.net" class="hover" id="signOut">Sign out</a>');
     
-    getTheaters().forEach(function(theater) {
-        $('#main').append('<div class="theater"><a href="' + theater.Url + '">' + theater.Name + '</a></div>')
+    getTheaters(function(theaters) {
+        theaters.forEach(function(theater) {
+            $('#main').append('<div class="theater" id="' + theater.id + '"><a href="' + theater.url + '">' + theater.name + '</a><div class="movies"></div></div>')
+        });
+    })
+}
+
+function loadMain() {
+
+    getTheaters(function(theaters) {
+        
+        getShowtimes(getDaySelected(), theaters, function(showtimes) {
+            
+            getMovies(showtimes, function(movies) {
+                
+                $('.movies').html('');
+                
+                theaters.map(function(theater) { return theater.id; }).forEach(function(theaterId) {
+                    
+                    var moviesInTheater = showtimes.filter(function(showtime) { return showtime.theaterId == theaterId}).map(function(showtime) { return showtime.movieId }).filter(onlyUnique);
+                    
+                    var moviesAsItems = moviesInTheater.map(function(movieId) {
+                                                             
+                        var movieInfo    = movies.find(function(movie) { return movie.id == movieId; } );
+                        var times        = showtimes.filter(function(showtime) { return showtime.movieId == movieId && showtime.theaterId == theaterId; }).map(function(showtime) { return showtime.time });                    
+                        var timesAsItems = times.map(function(time) { return '<li>'+time+'</li>'}).join('');
+                    
+                        return '<li>' + movieInfo.title + '<ul>' + timesAsItems + '</ul>' + '</li>';
+                    });
+                      
+                    $('#' + theaterId + ' .movies').append('<ul>' + moviesAsItems.join('') + '</ul>');
+                });
+            });
+        });
     });
 }
 
@@ -103,26 +138,48 @@ function hideMain() {
     $('#main').css('display','none');
 }
 
-function getDateSelect() {
+function getDaySelections() {
+    var days = $('#daySelector option').map(function() { return parseInt(this.value); } ).toArray();
+    
+    return days.map(getDayISO861);
+    
+    
+}
+
+function getDaySelected() {
+    var selectedDay = $('#daySelector').val();    
+    
+    return getDayISO861(selectedDay);
+}
+
+function getDaySelector() {
     
     var day0 = 'Today';
     var day1 = 'Tomorrow';
-    var day2 = dayAsText(new Date().getDay() + 2);
-    var day3 = dayAsText(new Date().getDay() + 3);
-    var day4 = dayAsText(new Date().getDay() + 4);
+    var day2 = getDayAsText(new Date().getDay() + 2);
+    var day3 = getDayAsText(new Date().getDay() + 3);
+    var day4 = getDayAsText(new Date().getDay() + 4);
     
     
-    return '<select>' 
-         +    '<option>' + day0 + '</option>'
-         +    '<option>' + day1 + '</option>'
-         +    '<option>' + day2 + '</option>'
-         +    '<option>' + day3 + '</option>'
-         +    '<option>' + day4 + '</option>'
+    return '<select id="daySelector">' 
+         +    '<option value="0">' + day0 + '</option>'
+         +    '<option value="1">' + day1 + '</option>'
+         +    '<option value="2">' + day2 + '</option>'
+         +    '<option value="3">' + day3 + '</option>'
+         +    '<option value="4">' + day4 + '</option>'
          + '</select>';
         
 }
 
-function dayAsText(day) {
+function getDayISO861(day) {
+    var date = new Date()    
+    
+    date.setDate(date.getDate() + parseInt(day));
+    
+    return date.toISOString().substring(0,10);
+}
+
+function getDayAsText(day) {
 
     day = day % 7;
 
@@ -136,22 +193,153 @@ function dayAsText(day) {
     return 'Saturday';
 }
 
-function getTheaters() {
-    return [ 
+function getTheaters(callback) {    
+    callback([ 
         {
-            'Id'  : '11542',
-            'Name': 'Alamo Drafthouse Cinema',
-            'Url' : 'https://drafthouse.com/charlottesville'
+            'id'  : '11542',
+            'name': 'Alamo Drafthouse Cinema',
+            'url' : 'https://drafthouse.com/charlottesville'
         },
         {
-            'Id'  : '11237',
-            'Name': 'Violet Crown Charlottesville',
-            'Url' : 'https://charlottesville.violetcrown.com/'
+            'id'  : '11237',
+            'name': 'Violet Crown Charlottesville',
+            'url' : 'https://charlottesville.violetcrown.com/'
         },
         {
-            'Id'  : '10657',
-            'Name': 'Regal Stonefield Stadium 14',
-            'Url' : 'https://www.regmovies.com/theaters/regal-stonefield-stadium-14-imax/C00318790965'
+            'id'  : '10657',
+            'name': 'Regal Stonefield Stadium 14',
+            'url' : 'https://www.regmovies.com/theaters/regal-stonefield-stadium-14-imax/C00318790965'
+        },
+        {
+            'id'  : '9997',
+            'name': 'The Paramount Theater',
+            'url' : 'https://www.theparamount.net/'
         }
-    ];
+    ]);
+}
+
+function getShowtimes(date, theaters, callback) {
+    
+    var theaterIds      = theaters.map(function(theater) { return theater.id }).filter(onlyUnique);
+    var cachedShowtimes = cacheGet('showtimes') || [];
+    var showtimes       = cachedShowtimes.filter(function(cachedShowtime) { return cachedShowtime.date == date && theaterIds.includes(cachedShowtime.theaterId) });
+    
+    if(showtimes.length > 0) {
+        callback(showtimes);
+        return;
+    }
+    
+    var dynamodb = new AWS.DynamoDB();
+
+    dynamodb.batchGetItem({'RequestItems':{'DSI_Showtimes': { 'Keys': theaterIds.map(function(tid) { return {'Id' : {'S':date+tid } }; })} } }, function(err, data) {
+
+        var showTimes = [];
+    
+        data.Responses.DSI_Showtimes.forEach(function(item) {
+            
+            if(item) {
+                
+                showtimes = showtimes.concat(item.Showtimes.L.map(function(showtime) {
+                    return {
+                        "theaterId": item.TheaterId.S,
+                        "movieId"  : showtime.M.MovieId.S,
+                        "date"     : item.Date.S,
+                        "time"     : showtime.M.Time.S,
+                        "matinee"  : showtime.M.Matinee.BOOL,
+                    };
+                }));
+            }
+            
+        });
+        
+        cacheSet('showtimes', cachedShowtimes.concat(showtimes));
+        
+        callback(showtimes);
+    });
+}
+
+function getMovies(showtimes, callback) {    
+
+    var movieIds     = showtimes.map(function(showtime) { return showtime.movieId }).filter(onlyUnique);
+    var cachedMovies = cacheGet('movies') || [];
+    var movies       = cachedMovies.filter(function(cachedMovie) { return movieIds.includes(cachedMovie.id) });
+    
+    if(movies.length == movieIds.length) {
+        callback(movies);
+        return;
+    }
+    
+    var dynamodb = new AWS.DynamoDB();
+
+    dynamodb.batchGetItem({'RequestItems':{'DSI_Movies': { 'Keys': movieIds.map(function(mid) { return {'Id' : {'S':mid } }; })} }}, function(err, data) {
+
+        var movies = [];
+
+        data.Responses.DSI_Movies.forEach(function(item) {
+            if(item) {
+
+                movies = movies.concat({
+                    'id'      : item.Id.S,
+                    'title'   : item.Title.S,
+                    'genres'  : item.Genres.SS,
+                    'topCast' : item.TopCast.SS,
+                    'advisory': item.Advisory.S
+                });
+            }
+        });
+
+        cacheSet('movies', cachedMovies.concat(movies));
+        callback(movies);
+    });
+
+}
+
+function cacheClearWholeCacheIfStale() {
+        
+    var oldStorageVersion = cacheGet('storageVersion');
+    var newStorageVersion = 1;
+    
+    if(oldStorageVersion != newStorageVersion) 
+    {
+        cacheClear();
+    }
+    
+    cacheSet('storageVersion', newStorageVersion);
+}
+
+function cacheCleanOldShowtimesByDate() {
+    
+    var currentDate = getDayISO861(0);    
+    var showtimes   = cacheGet('showtimes') || [];
+    
+    showtimes = showtimes.filter(function(showtime){ return showtime.date >= currentDate });
+        
+    cacheSet('showtimes', showtimes);
+}
+
+function cacheCleanOldMoviesByShowtimes() {
+
+    var showtimes      = cacheGet('showtimes') || [];
+    var movies         = cacheGet('movies')    || [];
+    var showtimeMovies = showtimes.map(function(showtime) { return showtime.movieId }).filter(onlyUnique);
+    
+    movies = movies.filter(function(movie) { return showtimeMovies.includes(movie.id); });
+    
+    cacheSet('movies', movies);
+}
+
+function cacheGet(key) {
+    return JSON.parse(window.localStorage.getItem(key));
+}
+
+function cacheSet(key, value) {
+    window.localStorage.setItem(key, JSON.stringify(value));
+}
+
+function cacheClear() {
+    window.localStorage.clear();
+}
+
+function onlyUnique(value, index, self) {
+    return self.indexOf(value) === index;
 }

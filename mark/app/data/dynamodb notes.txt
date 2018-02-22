@@ -1,0 +1,32 @@
+!!!!BE SURE TO FIGURE OUT HOW TO TURN ON DYNAMIC RESIZING OF RESOURCES!!!!!
+
+Experiments
+    >Experiment 1
+        If I create the ThesisParticipants table with a partition key on Id and no sort key the second command below will overwrite the first item's Name
+        aws dynamodb put-item --table-name ThesisParticipants --item '{\"Id\":{\"N\":\"123\"}, \"Name\": {\"S\":\"Test1\" }}'
+        aws dynamodb put-item --table-name ThesisParticipants --item '{\"Id\":{\"N\":\"123\"}, \"Name\": {\"S\":\"Test2\" }}'        
+    >Experiment 2
+        If I create the ThesisParticipants table with a partition key on Id and a sort key on Name the below command will fail since it doesn't have Name too.
+        aws dynamodb put-item --table-name ThesisParticipants --item '{\"Id\":{\"N\":\"123\"}}'
+    >Experiment 3
+        If I create the ThesisParticipants table with a partition key on Id and a sort key on Name the below commands will be two separate items
+        aws dynamodb put-item --table-name ThesisParticipants --item '{\"Id\":{\"N\":\"123\"}, \"Name\": {\"S\":\"Test1\" }}'
+        aws dynamodb put-item --table-name ThesisParticipants --item '{\"Id\":{\"N\":\"123\"}, \"Name\": {\"S\":\"Test2\" }}'
+    
+    
+Tables
+    >ThesisParticipants
+        >> Id (String)
+    >ThesisExperiments
+        >> ParticipantId (String)
+        >> Id (String)                
+        >> StartTime
+    >ThesisObservations
+        >> ExperimentId (Number)
+        >> Id (Number)
+
+General Information
+    >When you have a lot of nested data it is better to create a one to many table than to use large lists, maps or sets
+        >> https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/GuidelinesForItems.html#GuidelinesForItems.OneToMany
+    >Here is the list of data type descriptors allowed in JSON
+        >> https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Programming.LowLevelAPI.html#Programming.LowLevelAPI.DataTypeDescriptors
