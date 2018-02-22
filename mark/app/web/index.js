@@ -6,9 +6,10 @@ $(document).ready( function () {
     cacheCleanOldShowtimesByDate();
     cacheCleanOldMoviesByShowtimes();
 
-    initMain();
-    showSplash();
     hideMain();
+    hideSplash();
+    
+    initMain();
 
     $('#signOut').on('click', onSignOut);
     $('#daySelector').on('change', loadMain);
@@ -17,32 +18,28 @@ $(document).ready( function () {
 function gapiInit() {
 
     // don't need this because onSignIn is called everytime
-    // gapi.auth2.init().then(function(googleAuth) { 
-        // var googleUser = googleAuth.currentUser.get();
-        // if(googleUser.isSignedIn()) {
-            // onSignIn(googleUser);
-        // }
-    // });
+    gapi.auth2.init().then(function(googleAuth) {
+        if(googleAuth.currentUser.get().isSignedIn()) {
+            showMain();
+        }
+        else {
+            showSplash();
+        }
+    });
 }
 
 function onSignIn(googleUser) {
             
-    setAWSCredentials(googleUser.getBasicProfile().getEmail(), googleUser.getAuthResponse().id_token);    
+    setAWSCredentials(googleUser.getBasicProfile().getEmail(), googleUser.getAuthResponse().id_token);
     
     loadMain();
     
-    showMain();
     hideSplash();
+    showMain();
 };
 
-function onSignOut() {    
-            
+function onSignOut() {
     gapi.auth2.getAuthInstance().signOut();
-    
-    hideMain();
-    showSplash();
-    
-    return true;
 }
 
 function setAWSCredentials(loginEmail, googleToken) {
@@ -91,9 +88,11 @@ function initMain() {
     $('#toolbar .left' ).html('<a href="https://dsi.markrucker.net" class="strong"> Ethical Recommendations </a> <span>' + getDaySelector() + '</span>');
     $('#toolbar .right').html('<a href="https://dsi.markrucker.net" class="hover" id="signOut">Sign out</a>');
     
+    $('#main').append('<div class="theaters"></div>')
+    
     getTheaters(function(theaters) {
         theaters.forEach(function(theater) {
-            $('#main').append('<div class="theater" id="' + theater.id + '"><a href="' + theater.url + '">' + theater.name + '</a><div class="movies"></div></div>')
+            $('#main .theaters').append('<div class="theater" id="' + theater.id + '"><a href="' + theater.url + '" class="title">' + theater.name + '</a><div class="movies"></div></div>')
         });
     })
 }
@@ -106,22 +105,22 @@ function loadMain() {
             
             getMovies(showtimes, function(movies) {
                 
-                $('.movies').html('');
+                $('.movies').remove();
                 
                 theaters.map(function(theater) { return theater.id; }).forEach(function(theaterId) {
                     
                     var moviesInTheater = showtimes.filter(function(showtime) { return showtime.theaterId == theaterId}).map(function(showtime) { return showtime.movieId }).filter(onlyUnique);
                     
                     var moviesAsItems = moviesInTheater.map(function(movieId) {
-                                                             
+
                         var movieInfo    = movies.find(function(movie) { return movie.id == movieId; } );
-                        var times        = showtimes.filter(function(showtime) { return showtime.movieId == movieId && showtime.theaterId == theaterId; }).map(function(showtime) { return showtime.time });                    
-                        var timesAsItems = times.map(function(time) { return '<li>'+time+'</li>'}).join('');
+                        var times        = showtimes.filter(function(showtime) { return showtime.movieId == movieId && showtime.theaterId == theaterId; }).map(function(showtime) { return showtime.time });
+                        var timesAsItems = times.map(function(time) { return '<li class="time">'+time+'</li>'}).join('');
                     
-                        return '<li>' + movieInfo.title + '<ul>' + timesAsItems + '</ul>' + '</li>';
+                        return '<li class="movie"><span class="title">' + movieInfo.title + '</span><ul class="times">' + timesAsItems + '</ul>' + '</li>';
                     });
                       
-                    $('#' + theaterId + ' .movies').append('<ul>' + moviesAsItems.join('') + '</ul>');
+                    $('#' + theaterId ).append('<ul class="movies">' + moviesAsItems.join('') + '</ul>');
                 });
             });
         });
@@ -142,24 +141,21 @@ function getDaySelections() {
     var days = $('#daySelector option').map(function() { return parseInt(this.value); } ).toArray();
     
     return days.map(getDayISO861);
-    
-    
 }
 
 function getDaySelected() {
-    var selectedDay = $('#daySelector').val();    
+    var selectedDay = $('#daySelector').val();
     
     return getDayISO861(selectedDay);
 }
 
 function getDaySelector() {
-    
+
     var day0 = 'Today';
     var day1 = 'Tomorrow';
     var day2 = getDayAsText(new Date().getDay() + 2);
     var day3 = getDayAsText(new Date().getDay() + 3);
     var day4 = getDayAsText(new Date().getDay() + 4);
-    
     
     return '<select id="daySelector">' 
          +    '<option value="0">' + day0 + '</option>'
@@ -168,11 +164,10 @@ function getDaySelector() {
          +    '<option value="3">' + day3 + '</option>'
          +    '<option value="4">' + day4 + '</option>'
          + '</select>';
-        
 }
 
 function getDayISO861(day) {
-    var date = new Date()    
+    var date = new Date()
     
     date.setDate(date.getDate() + parseInt(day));
     
@@ -210,11 +205,11 @@ function getTheaters(callback) {
             'name': 'Regal Stonefield Stadium 14',
             'url' : 'https://www.regmovies.com/theaters/regal-stonefield-stadium-14-imax/C00318790965'
         },
-        {
+        /*{
             'id'  : '9997',
             'name': 'The Paramount Theater',
             'url' : 'https://www.theparamount.net/'
-        }
+        }*/
     ]);
 }
 
@@ -225,13 +220,11 @@ function getShowtimes(date, theaters, callback) {
     var showtimes       = cachedShowtimes.filter(function(cachedShowtime) { return cachedShowtime.date == date && theaterIds.includes(cachedShowtime.theaterId) });
     
     if(showtimes.length > 0) {
-        callback(showtimes);
-        return;
+        callback(showtimes); return;
     }
     
-    var dynamodb = new AWS.DynamoDB();
-
-    dynamodb.batchGetItem({'RequestItems':{'DSI_Showtimes': { 'Keys': theaterIds.map(function(tid) { return {'Id' : {'S':date+tid } }; })} } }, function(err, data) {
+    console.log('hit remot Showtimes');
+    new AWS.DynamoDB().batchGetItem({'RequestItems':{'DSI_Showtimes': { 'Keys': theaterIds.map(function(tid) { return {'Id' : {'S':date+tid } }; })} } }, function(err, data) {
 
         var showTimes = [];
     
@@ -252,8 +245,7 @@ function getShowtimes(date, theaters, callback) {
             
         });
         
-        cacheSet('showtimes', cachedShowtimes.concat(showtimes));
-        
+        cacheSet('showtimes', cachedShowtimes.concat(showtimes).filter(onlyUniqueShowtimes()));
         callback(showtimes);
     });
 }
@@ -265,13 +257,11 @@ function getMovies(showtimes, callback) {
     var movies       = cachedMovies.filter(function(cachedMovie) { return movieIds.includes(cachedMovie.id) });
     
     if(movies.length == movieIds.length) {
-        callback(movies);
-        return;
-    }
-    
-    var dynamodb = new AWS.DynamoDB();
+        callback(movies); return;
+    }    
 
-    dynamodb.batchGetItem({'RequestItems':{'DSI_Movies': { 'Keys': movieIds.map(function(mid) { return {'Id' : {'S':mid } }; })} }}, function(err, data) {
+    console.log('hit remot Movies');
+    new AWS.DynamoDB().batchGetItem({'RequestItems':{'DSI_Movies': { 'Keys': movieIds.map(function(mid) { return {'Id' : {'S':mid } }; })} }}, function(err, data) {
 
         var movies = [];
 
@@ -288,7 +278,7 @@ function getMovies(showtimes, callback) {
             }
         });
 
-        cacheSet('movies', cachedMovies.concat(movies));
+        cacheSet('movies', cachedMovies.concat(movies).filter(onlyUniqueMovies()));
         callback(movies);
     });
 
@@ -297,7 +287,7 @@ function getMovies(showtimes, callback) {
 function cacheClearWholeCacheIfStale() {
         
     var oldStorageVersion = cacheGet('storageVersion');
-    var newStorageVersion = 1;
+    var newStorageVersion = 3;
     
     if(oldStorageVersion != newStorageVersion) 
     {
@@ -309,23 +299,22 @@ function cacheClearWholeCacheIfStale() {
 
 function cacheCleanOldShowtimesByDate() {
     
-    var currentDate = getDayISO861(0);    
-    var showtimes   = cacheGet('showtimes') || [];
-    
-    showtimes = showtimes.filter(function(showtime){ return showtime.date >= currentDate });
-        
-    cacheSet('showtimes', showtimes);
+    var currentDate     = getDayISO861(0);    
+    var cachedShowtimes = cacheGet('showtimes') || [];
+
+    cachedShowtimes = cachedShowtimes.filter(onlyUniqueShowtimes()).filter(function(s1) { return s1.date >= currentDate });
+
+    cacheSet('showtimes', cachedShowtimes);
 }
 
 function cacheCleanOldMoviesByShowtimes() {
 
-    var showtimes      = cacheGet('showtimes') || [];
-    var movies         = cacheGet('movies')    || [];
-    var showtimeMovies = showtimes.map(function(showtime) { return showtime.movieId }).filter(onlyUnique);
+    var cachedShowtimes  = cacheGet('showtimes') || [];
+    var cachedMovies     = cacheGet('movies')    || []; 
+
+    cachedMovies = cachedMovies.filter(onlyUniqueMovies()).filter(onlyShowtimeMovies(cachedShowtimes));
     
-    movies = movies.filter(function(movie) { return showtimeMovies.includes(movie.id); });
-    
-    cacheSet('movies', movies);
+    cacheSet('movies', cachedMovies);
 }
 
 function cacheGet(key) {
@@ -340,6 +329,28 @@ function cacheClear() {
     window.localStorage.clear();
 }
 
-function onlyUnique(value, index, self) {
-    return self.indexOf(value) === index;
+function onlyUnique(value, index, list) {
+    return list.indexOf(value) === index;
+}
+
+function onlyUniquePredciate(isEqual) {
+    return function (v1, index, list) {
+        return list.findIndex(function(v2) { return isEqual(v1,v2); }) == index;
+    };
+}
+
+function onlyUniqueMovies() {
+    return onlyUniquePredciate(function(m1,m2) { return m1.id == m2.id });
+}
+
+function onlyUniqueShowtimes() {
+    return onlyUniquePredciate(function(s1,s2) { return s1.theaterId == s2.theaterId && s1.movieId == s2.movieId && s1.time == s2.time && s1.date == s2.date });
+}
+
+function onlyShowtimeMovies(showtimes) {
+    var showtimeMovieIds = showtimes.map(function(showtime) { return showtime.movieId }).filter(onlyUnique);
+    
+    return function(movie) {
+        return showtimeMovieIds.includes(movie.id);
+    };
 }

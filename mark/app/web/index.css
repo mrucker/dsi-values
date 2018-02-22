@@ -9,6 +9,11 @@ body {
     font-family: 'Open Sans'
 }
 
+#splash {
+    margin: 50px 0 0 50px;
+    color: #E5E5E5;
+}
+
 #toolbar {
     background-color: #CCA43B;
     height          : 25px;
@@ -43,35 +48,60 @@ body {
     color: #E5E5E5;
 }
 
-#splash {
-    margin: 50px 0 0 50px;
-    color: #E5E5E5;
-}
-
 #main {
     margin: 20px 0 0 20px;
     color: #E5E5E5;
 }
 
-#main .theater {
-    margin: 10px 0 0 0;
+#main .theater > .title {
+    font-size: 20px;
 }
 
-#main .theater a:link {
+#main .movie > .title {
+    font-size: 15px;
+}
+
+#main .time {
+    font-size: 10px;
+}
+
+#main .theaters .theater {
+    float: left;
+    width: 33.33%;
+}
+
+#main .theaters .theater a:link {
     text-decoration: none;
     color: #E5E5E5;
 }
 
-#main .theater a:visited {
+#main .theaters .theater a:visited {
     color: #FFFFFF;
 }
 
-#main .theater a:hover {
+#main .theaters .theater a:hover {
     color: #CCA43B;
 }
 
-#main .theater .movies {
-    margin: 2px 0 0 20px;
+#main .theaters .theater .movies {
+    margin: 2px 110px 0 20px;
+    list-style-type: none;
+}
+
+#main .theaters .theater .movies .movie {
+    margin: 0;
+    padding: 0;
+    clear: left;
+}
+
+#main .theaters .theater .movies .movie .times {
+    list-style-type: none;
+}
+
+#main .theaters .theater .movies .movie .times .time {
+     display: inline;
+     padding: 0 0 0 10px;
+     float: left;
 }
 
 /*https://coolors.co/363636-242f40-cca43b-e5e5e5-ffffff*/
