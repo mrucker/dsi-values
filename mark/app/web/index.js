@@ -99,28 +99,29 @@ function initMain() {
 
 function loadMain() {
 
+    var dateToLoad  = getDaySelected();
+    var currentDate = getDayISO861(0);
+    var currentTime = getTimeISO861();
+
     getTheaters(function(theaters) {
         
-        getShowtimes(getDaySelected(), theaters, function(showtimes) {
+        getShowtimes(theaters, dateToLoad, function(showtimes) {
             
             getMovies(showtimes, function(movies) {
                 
                 $('.movies').remove();
                 
                 theaters.map(function(theater) { return theater.id; }).forEach(function(theaterId) {
-                    
-                    var moviesInTheater = showtimes.filter(function(showtime) { return showtime.theaterId == theaterId}).map(function(showtime) { return showtime.movieId }).filter(onlyUnique);
-                    
-                    var moviesAsItems = moviesInTheater.map(function(movieId) {
 
-                        var movieInfo    = movies.find(function(movie) { return movie.id == movieId; } );
-                        var times        = showtimes.filter(function(showtime) { return showtime.movieId == movieId && showtime.theaterId == theaterId; }).map(function(showtime) { return showtime.time });
-                        var timesAsItems = times.map(function(time) { return '<li class="time">'+time+'</li>'}).join('');
+                    var theaterShows  = showtimes.filter(function(showtime) { return showtime.theaterId == theaterId && (showtime.date > currentDate || showtime.time >= currentTime) });
+                    var movieTimes    = group(theaterShows, 'movieId', function(show) { return show.time; });
+                    var theaterMovies = movies.filter(onlyShowtimeMovies(theaterShows)).sort(function(x,y) { return movieTimes[y.id].length - movieTimes[x.id].length; });
                     
-                        return '<li class="movie"><span class="title">' + movieInfo.title + '</span><ul class="times">' + timesAsItems + '</ul>' + '</li>';
-                    });
+
+                    var timeHTML  = function(time ) { return '<li class="time">'+time+'</li>'; };
+                    var movieHTML = function(movie) { return '<li class="movie"><span class="title">' + movie.title + '</span><ul class="times">' + movieTimes[movie.id].map(timeHTML).join('') + '</ul>' + '</li>'; };
                       
-                    $('#' + theaterId ).append('<ul class="movies">' + moviesAsItems.join('') + '</ul>');
+                    $('#' + theaterId ).append('<ul class="movies">' + theaterMovies.map(movieHTML).join('') + '</ul>');
                 });
             });
         });
@@ -174,6 +175,10 @@ function getDayISO861(day) {
     return date.toISOString().substring(0,10);
 }
 
+function getTimeISO861() {
+    return new Date().toTimeString().substring(0,5);//will break if person calls website from outside of EST
+}
+
 function getDayAsText(day) {
 
     day = day % 7;
@@ -213,7 +218,7 @@ function getTheaters(callback) {
     ]);
 }
 
-function getShowtimes(date, theaters, callback) {
+function getShowtimes(theaters, date, callback) {
     
     var theaterIds      = theaters.map(function(theater) { return theater.id }).filter(onlyUnique);
     var cachedShowtimes = cacheGet('showtimes') || [];
@@ -354,3 +359,17 @@ function onlyShowtimeMovies(showtimes) {
         return showtimeMovieIds.includes(movie.id);
     };
 }
+
+function onlyMovieTimes(movie) {
+    
+    return function(showtime) {
+        return showtime.movieId == movie.id;
+    }
+}
+
+function group (items, key, map) {
+    
+    map = map || function(item) { return item; };
+    
+    return items.reduce(function(dict, item) { (dict[item[key]] = dict[item[key]] || []).push(map(item)); return dict; }, {});
+};
