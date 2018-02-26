@@ -40,6 +40,7 @@ function onSignIn(googleUser) {
 
 function onSignOut() {
     gapi.auth2.getAuthInstance().signOut();
+    cacheSet('storageVersion', 0);
 }
 
 function setAWSCredentials(loginEmail, googleToken) {
@@ -163,7 +164,7 @@ function getDaySelector() {
          +    '<option value="1">' + day1 + '</option>'
          +    '<option value="2">' + day2 + '</option>'
          +    '<option value="3">' + day3 + '</option>'
-         +    '<option value="4">' + day4 + '</option>'
+         //+    '<option value="4">' + day4 + '</option>'
          + '</select>';
 }
 
@@ -292,7 +293,7 @@ function getMovies(showtimes, callback) {
 function cacheClearWholeCacheIfStale() {
         
     var oldStorageVersion = cacheGet('storageVersion');
-    var newStorageVersion = 3;
+    var newStorageVersion = new Date().getDate(); //forces a cache refresh every day
     
     if(oldStorageVersion != newStorageVersion) 
     {
