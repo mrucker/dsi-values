@@ -48,9 +48,17 @@ body {
     color: #E5E5E5;
 }
 
-#main {
-    margin: 20px 0 0 20px;
-    color: #E5E5E5;
+#main {    
+    margin: 0 0 0 20px;
+    color : #E5E5E5;
+}
+
+#main > div {
+    margin: 10px 0 0 0;
+}
+
+#main .recommendations {
+    height : 100px;
 }
 
 #main .theater > .title {
@@ -102,6 +110,36 @@ body {
      display: inline;
      padding: 0 0 0 10px;
      float: left;
+}
+
+#main .theaters .theater .movies .movie .times .time button {
+    padding         : 1px;
+    border          : 1px solid #CCA43B;
+    border-radius   : 2px;
+    cursor          : pointer;
+    
+    -webkit-transition-duration: 0.4s; /* Safari */
+    transition-duration        : 0.4s;
+}
+
+#main .theaters .theater .movies .movie .times .time button.o {
+     background-color: #242F40;
+     color           : #E5E5E5;
+}
+
+#main .theaters .theater .movies .movie .times .time button.x {
+     background-color: #CCA43B;
+     color           : #242F40;
+}
+
+#main .theaters .theater .movies .movie .times .time button:hover{
+     background-color: #E5E5E5;
+     color           : #242F40;
+}
+
+#main .theaters .theater .movies .movie .times .time button:active{
+     background-color: #E5E5E5;
+     color           : #242F40;
 }
 
 /*https://coolors.co/363636-242f40-cca43b-e5e5e5-ffffff*/

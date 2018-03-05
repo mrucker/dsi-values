@@ -16,8 +16,7 @@ $(document).ready( function () {
 });
 
 function gapiInit() {
-
-    // don't need this because onSignIn is called everytime
+    
     gapi.auth2.init().then(function(googleAuth) {
         if(googleAuth.currentUser.get().isSignedIn()) {
             showMain();
@@ -41,6 +40,14 @@ function onSignIn(googleUser) {
 function onSignOut() {
     gapi.auth2.getAuthInstance().signOut();
     cacheSet('storageVersion', 0);
+}
+
+function onTimeClick() {
+    var time    = $(this).html();    
+    var movie   = $(this).closest(".movie").find(".title").html();
+    var theater = $(this).closest(".theater").find(".title").html()
+    
+    $(this).toggleClass('x').toggleClass('o');
 }
 
 function setAWSCredentials(loginEmail, googleToken) {
@@ -89,7 +96,9 @@ function initMain() {
     $('#toolbar .left' ).html('<a href="https://dsi.markrucker.net" class="strong"> Ethical Recommendations </a> <span>' + getDaySelector() + '</span>');
     $('#toolbar .right').html('<a href="https://dsi.markrucker.net" class="hover" id="signOut">Sign out</a>');
     
-    $('#main').append('<div class="theaters"></div>')
+    $('#main').append('<div class="recommendations group"><h1>Recommendations</h1></div>');
+    
+    $('#main').append('<div class="theaters group"><h1>Showtimes</h1></div>')
     
     getTheaters(function(theaters) {
         theaters.forEach(function(theater) {
@@ -117,9 +126,8 @@ function loadMain() {
                     var theaterShows  = showtimes.filter(function(showtime) { return showtime.theaterId == theaterId && (showtime.date > currentDate || showtime.time >= currentTime) });
                     var movieTimes    = group(theaterShows, 'movieId', function(show) { return show.time; });
                     var theaterMovies = movies.filter(onlyShowtimeMovies(theaterShows)).sort(function(x,y) { return movieTimes[y.id].length - movieTimes[x.id].length; });
-                    
 
-                    var timeHTML  = function(time ) { return '<li class="time">'+time+'</li>'; };
+                    var timeHTML  = function(time ) { return '<li class="time"><button class="o">'+time+'</button></li>'; };
                     var movieHTML = function(movie) { return '<li class="movie"><span class="title">' + movie.title + '</span><ul class="times">' + movieTimes[movie.id].map(timeHTML).join('') + '</ul>' + '</li>'; };
                       
                     $('#' + theaterId ).append('<ul class="movies">' + theaterMovies.map(movieHTML).join('') + '</ul>');
@@ -127,6 +135,8 @@ function loadMain() {
             });
         });
     });
+    
+    $('.times button').on('click', onTimeClick);
 }
 
 function showMain() {
