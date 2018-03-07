@@ -339,9 +339,9 @@ function getRandomRecommendations(data) {
     return new Promise(function(resolve, reject) {
         
         //var seed = parseInt(data.date.replace("-","").replace("-",""));
-        var rand = new Math.seedrandom(data.date);
+        var rand = new Math.seedrandom(data.date + AWS.config.credentials.params.LoginId);
         
-        var randomCount = Math.floor(rand() * 10);
+        var randomCount = Math.floor(rand() * 5 + 4);
         var randomTimes = [];
         
         for(var i = 0; i < randomCount; i++) {
