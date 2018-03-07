@@ -141,8 +141,11 @@ function loadMain() {
 
 function loadRecommendations(date, recommendations, history) {
     
+    var currentDate = getDayISO861(0);
+    var currentTime = getTimeISO861();
+    
     $('.recommendations .loading').remove();
-    $('.recommendations').append(recommendations.map(recommendationAsHTML));
+    $('.recommendations').append(recommendations.filter(function(r) { return date > currentDate || r.time > currentTime }).map(recommendationAsHTML));
     $('.recommendations button').on('click', onRecommendationClick);
     
     history.filter(function(h) { return h.date == date }).forEach(function(h) { getButtons(h.theaterId, h.movieId, h.time).removeClass('o x').addClass('x'); })
@@ -319,7 +322,7 @@ function getRandomRecommendations(data) {
         for(var i = 0; i < randomCount; i++) {
             randomTimes.push(data.times[Math.floor(rand() * data.times.length)])
         }
-        
+
         recommendations = randomTimes.map(function(time) { 
             return {
                 'movie'  : data.movies.find(function(m){ return m.id == time.movieId}), 
@@ -327,6 +330,8 @@ function getRandomRecommendations(data) {
                 'time'   : time.time
             }; 
         });
+        
+        
         
         resolve(Object.assign({}, data, {'recommendations':recommendations})); return;
     });
