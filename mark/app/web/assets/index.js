@@ -41,22 +41,31 @@ function onSignIn(googleUser) {
 function onSignOut() {
     gapi.auth2.getAuthInstance().signOut();
     cacheSet('storageVersion', 0);
+    new AWS.CognitoSyncManager().wipeData();
 }
 
 function onMovieTimeClick() {
     var time      = $(this).data('time')
     var movieId   = $(this).data('movieId');
     var theaterId = $(this).data('theaterId');
-
-    $('button[data-theater-id="'+theaterId+'"][data-movie-id="'+movieId+'"][data-time="'+time+'"]').toggleClass('x').toggleClass('o');
+    
+    var buttons  = getButtons(theaterId, movieId, time);
+    var selected = buttons.attr('class') == 'x';
+    
+    if(selected) {
+        historyRemove(theaterId, movieId, getDaySelected(), time).then(historySync).then(function() {
+            buttons.toggleClass('x').toggleClass('o');
+        });
+    }
+    else {
+        historyPut(theaterId, movieId, getDaySelected(), time).then(historySync).then(function() {
+            buttons.toggleClass('x').toggleClass('o');
+        });
+    }
 }
 
 function onRecommendationClick() {
-    var time      = $(this).data('time')
-    var movieId   = $(this).data('movieId');
-    var theaterId = $(this).data('theaterId');
-    
-    $('button[data-theater-id="'+theaterId+'"][data-movie-id="'+movieId+'"][data-time="'+time+'"]').toggleClass('x').toggleClass('o');
+    onMovieTimeClick.call(this);
 }
 //events
 
@@ -120,24 +129,26 @@ function loadMain() {
     $('.recommendations').append(loadingAsHTML());
     $('.theaters .theater').append(loadingAsHTML());
 
-    return getDaySelected().then(getTheaters).then(getTimes).then(getMovies).then(function(data) {
+    return Promise.resolve({'date':getDaySelected()}).then(getTheaters).then(getTimes).then(getMovies).then(getHistory).then(function(data) {
          return new Promise(function(resolve, reject) {
-            loadTheatersMoviesTimes(data.theaters, data.movies, data.times);
+            loadTheatersMoviesTimes(data.date, data.theaters, data.movies, data.times, data.history);
             resolve(data);
          });        
     }).then(getRecommendations).then(function(data) {
-        loadRecommendations(data.recommendations);
+        loadRecommendations(data.date, data.recommendations, data.history);
     });
 }
 
-function loadRecommendations(recommendations) {
+function loadRecommendations(date, recommendations, history) {
     
     $('.recommendations .loading').remove();
     $('.recommendations').append(recommendations.map(recommendationAsHTML));
     $('.recommendations button').on('click', onRecommendationClick);
+    
+    history.filter(function(h) { return h.date == date }).forEach(function(h) { getButtons(h.theaterId, h.movieId, h.time).removeClass('o x').addClass('x'); })
 }
 
-function loadTheatersMoviesTimes(theaters, movies, times) {
+function loadTheatersMoviesTimes(date, theaters, movies, times, history) {
     
     var currentDate = getDayISO861(0);
     var currentTime = getTimeISO861();
@@ -153,6 +164,8 @@ function loadTheatersMoviesTimes(theaters, movies, times) {
         $('#' + theater.id + ' .movies').append(sortedMovies.map(movieAsHTML).join(''));
         $('#' + theater.id + ' .times button').on('click', onMovieTimeClick);
     });
+    
+    history.filter(function(h) { return h.date == date }).forEach(function(h) { getButtons(h.theaterId, h.movieId, h.time).toggleClass('o').toggleClass('x'); })
 }
 
 function showMain() {
@@ -163,63 +176,6 @@ function showMain() {
 function hideMain() {
     $("#toolbar span").css('display','none');
     $('#main').css('display','none');
-}
-
-function getDaySelections() {
-    var days = $('#daySelector option').map(function() { return parseInt(this.value); } ).toArray();
-    
-    return days.map(getDayISO861);
-}
-
-function getDaySelected() {
-    var selectedDay = $('#daySelector').val();
-    
-    return new Promise(function(resolve, reject) { 
-        resolve({'date':getDayISO861(selectedDay)});
-    });
-}
-
-function getDaySelector() {
-
-    var day0 = 'Today';
-    var day1 = 'Tomorrow';
-    var day2 = getDayAsText(new Date().getDay() + 2);
-    var day3 = getDayAsText(new Date().getDay() + 3);
-    var day4 = getDayAsText(new Date().getDay() + 4);
-    
-    return '<select id="daySelector">' 
-         +    '<option value="0">' + day0 + '</option>'
-         +    '<option value="1">' + day1 + '</option>'
-         +    '<option value="2">' + day2 + '</option>'
-         +    '<option value="3">' + day3 + '</option>'
-         //+    '<option value="4">' + day4 + '</option>'
-         + '</select>';
-}
-
-function getDayISO861(day) {
-    var date = new Date()
-    
-    date.setDate(date.getDate() + parseInt(day));
-    
-    return date.toISOString().substring(0,10);
-}
-
-function getTimeISO861() {
-    return new Date().toTimeString().substring(0,5);//will break if person calls website from outside of EST
-}
-
-function getDayAsText(day) {
-
-    day = day % 7;
-
-    if(day == 0) return 'Sunday';
-    if(day == 1) return 'Monday';
-    if(day == 2) return 'Tuesday';
-    if(day == 3) return 'Wednesday';
-    if(day == 4) return 'Thursday';
-    if(day == 5) return 'Friday';
-    
-    return 'Saturday';
 }
 
 function getTheaters(data) {
@@ -331,6 +287,22 @@ function getMovies(data) {
 
 }
 
+function getHistory(data) {
+    return new Promise(function(resolve, reject) {
+        historySync().then(function() {
+            new AWS.CognitoSyncManager().openOrCreateDataset('History', function(err, dataset) {
+            
+                dataset.getAllRecords(function(err, records) {
+                    if(err) 
+                        reject(err); 
+                    else 
+                        resolve(Object.assign({}, data, {'history':records.filter(function(r) { return r.value != ''; }).map(function(r) { return JSON.parse(r.value); }) }));
+                });
+            });
+        });
+    });
+}
+
 function getRecommendations(data) {
     return getRandomRecommendations(data);
 }
@@ -358,6 +330,65 @@ function getRandomRecommendations(data) {
         
         resolve(Object.assign({}, data, {'recommendations':recommendations})); return;
     });
+}
+
+function getButtons(theaterId, movieId, time) {
+    return $('button[data-theater-id="'+theaterId+'"][data-movie-id="'+movieId+'"][data-time="'+time+'"]')
+}
+
+function getDaySelections() {
+    var days = $('#daySelector option').map(function() { return parseInt(this.value); } ).toArray();
+    
+    return days.map(getDayISO861);
+}
+
+function getDaySelected() {
+    var selectedDay = $('#daySelector').val();
+    
+    return getDayISO861(selectedDay);    
+}
+
+function getDaySelector() {
+
+    var day0 = 'Today';
+    var day1 = 'Tomorrow';
+    var day2 = getDayAsText(new Date().getDay() + 2);
+    var day3 = getDayAsText(new Date().getDay() + 3);
+    var day4 = getDayAsText(new Date().getDay() + 4);
+    
+    return '<select id="daySelector">' 
+         +    '<option value="0">' + day0 + '</option>'
+         +    '<option value="1">' + day1 + '</option>'
+         +    '<option value="2">' + day2 + '</option>'
+         +    '<option value="3">' + day3 + '</option>'
+         //+    '<option value="4">' + day4 + '</option>'
+         + '</select>';
+}
+
+function getDayISO861(day) {
+    var date = new Date()
+    
+    date.setDate(date.getDate() + parseInt(day));
+    
+    return date.toISOString().substring(0,10);
+}
+
+function getTimeISO861() {
+    return new Date().toTimeString().substring(0,5);//will break if person calls website from outside of EST
+}
+
+function getDayAsText(day) {
+
+    day = day % 7;
+
+    if(day == 0) return 'Sunday';
+    if(day == 1) return 'Monday';
+    if(day == 2) return 'Tuesday';
+    if(day == 3) return 'Wednesday';
+    if(day == 4) return 'Thursday';
+    if(day == 5) return 'Friday';
+    
+    return 'Saturday';
 }
 
 //cache methods
@@ -603,3 +634,83 @@ function group (items, key, map) {
     return items.reduce(function(dict, item) { (dict[item[key]] = dict[item[key]] || []).push(map(item)); return dict; }, {});
 };
 //filter,reduce methods
+
+//movie history
+function historySync() {
+    return new Promise(function(resolve, reject) {
+        
+        callback = {
+            onSuccess : function(dataset, updates) { resolve(); },
+            onFailure : function(err) { reject(err); },
+            onConflict: historyOnConflict
+        };
+        
+        new AWS.CognitoSyncManager().openOrCreateDataset('History', function(err, dataset) {
+            dataset.synchronize(callback);
+        });
+    });
+}
+
+function historyPut(theaterId, movieId, date, time) {
+
+    var key = historyKey(theaterId, movieId, date, time);
+    var val = historyVal(theaterId, movieId, date, time);
+
+    return new Promise(function(resolve, reject) {
+        new AWS.CognitoSyncManager().openOrCreateDataset('History', function(err, dataset) {
+            dataset.put(key, val, function(err, record) {
+                if(err) reject(err); else resolve(record);
+            });
+        });
+    });
+
+}
+
+function historyRemove(theaterId, movieId, date, time) {
+
+    var key = historyKey(theaterId, movieId, date, time);    
+    
+    return new Promise(function(resolve, reject) {
+        new AWS.CognitoSyncManager().openOrCreateDataset('History', function(err, dataset) {
+            dataset.remove(key, function(err, record) {
+                if(err) {
+                    reject(err); 
+                }
+                else {
+                    resolve(record);
+                }
+            });
+        });
+    });
+}
+
+function historyKey(theaterId, movieId, date, time) {
+    return theaterId+movieId+date+time;
+}
+
+function historyVal(theaterId, movieId, date, time) {
+    return JSON.stringify({'theaterId':theaterId, 'movieId':movieId, 'date':date, 'time':time});
+}
+
+function historyOnConflict(dataset, conflicts, callback) {
+     var resolved = [];
+
+     for (var i=0; i<conflicts.length; i++) {
+
+        // Take remote version.
+        //resolved.push(conflicts[i].resolveWithRemoteRecord());
+
+        // Or... take local version.
+         resolved.push(conflicts[i].resolveWithLocalRecord());
+
+        // Or... use custom logic.
+        // var newValue = conflicts[i].getRemoteRecord().getValue() + conflicts[i].getLocalRecord().getValue();
+        // resolved.push(conflicts[i].resolveWithValue(newValue);
+
+     }
+
+     dataset.resolve(resolved, function() {
+        return callback(true);
+     });
+}
+//movie history
