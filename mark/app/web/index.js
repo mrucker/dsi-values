@@ -15,6 +15,7 @@ $(document).ready( function () {
     $('#daySelector').on('change', loadMain);
 });
 
+//events
 function gapiInit() {
     
     gapi.auth2.init().then(function(googleAuth) {
@@ -42,13 +43,18 @@ function onSignOut() {
     cacheSet('storageVersion', 0);
 }
 
-function onTimeClick() {
+function onMovieTimeClick() {
     var time    = $(this).html();    
     var movie   = $(this).closest(".movie").find(".title").html();
     var theater = $(this).closest(".theater").find(".title").html()
     
     $(this).toggleClass('x').toggleClass('o');
 }
+
+function onRecommendationClick() {    
+    $(this).toggleClass('x').toggleClass('o');
+}
+//events
 
 function setAWSCredentials(loginEmail, googleToken) {
     AWS.config.credentials = new AWS.CognitoIdentityCredentials({ 
@@ -96,47 +102,57 @@ function initMain() {
     $('#toolbar .left' ).html('<a href="https://dsi.markrucker.net" class="strong"> Ethical Recommendations </a> <span>' + getDaySelector() + '</span>');
     $('#toolbar .right').html('<a href="https://dsi.markrucker.net" class="hover" id="signOut">Sign out</a>');
     
-    $('#main').append('<div class="recommendations group"><h1>Recommendations</h1></div>');
+    $('#main').append('<h1>Recommendations</h1><ol class="recommendations"></ol>');
+    $('#main').append('<h1>Showtimes</h1><div class="theaters"></div>')
     
-    $('#main').append('<div class="theaters group"><h1>Showtimes</h1></div>')
-    
-    getTheaters(function(theaters) {
-        theaters.forEach(function(theater) {
+    getTheaters().then(function(data) {
+        data.theaters.forEach(function(theater) {
             $('#main .theaters').append('<div class="theater" id="' + theater.id + '"><a href="' + theater.url + '" class="title">' + theater.name + '</a><div class="movies"></div></div>')
         });
     })
 }
 
-function loadMain() {
+function loadMain() {    
 
-    var dateToLoad  = getDaySelected();
+    $('.recommendation').remove();
+    $('.theaters .movie').remove();
+    
+    $('.recommendations').append(loadingAsHTML());
+    $('.theaters .theater').append(loadingAsHTML());
+
+    return getDaySelected().then(getTheaters).then(getTimes).then(getMovies).then(function(data) {
+         return new Promise(function(resolve, reject) {
+            loadTheatersMoviesTimes(data.theaters, data.movies, data.times);
+            resolve(data);
+         });        
+    }).then(getRecommendations).then(function(data) {
+        loadRecommendations(data.recommendations);
+    });
+}
+
+function loadRecommendations(recommendations) {
+    
+    $('.recommendations .loading').remove();
+    $('.recommendations').append(recommendations.map(recommendationAsHTML));
+    $('.recommendations button').on('click', onRecommendationClick);
+}
+
+function loadTheatersMoviesTimes(theaters, movies, times) {
+    
     var currentDate = getDayISO861(0);
     var currentTime = getTimeISO861();
-
-    getTheaters(function(theaters) {
-        
-        getShowtimes(theaters, dateToLoad, function(showtimes) {
-            
-            getMovies(showtimes, function(movies) {
-                
-                $('.movies').remove();
-                
-                theaters.map(function(theater) { return theater.id; }).forEach(function(theaterId) {
-
-                    var theaterShows  = showtimes.filter(function(showtime) { return showtime.theaterId == theaterId && (showtime.date > currentDate || showtime.time >= currentTime) });
-                    var movieTimes    = group(theaterShows, 'movieId', function(show) { return show.time; });
-                    var theaterMovies = movies.filter(onlyShowtimeMovies(theaterShows)).sort(function(x,y) { return movieTimes[y.id].length - movieTimes[x.id].length; });
-
-                    var timeHTML  = function(time ) { return '<li class="time"><button class="o">'+time+'</button></li>'; };
-                    var movieHTML = function(movie) { return '<li class="movie"><span class="title">' + movie.title + '</span><ul class="times">' + movieTimes[movie.id].map(timeHTML).join('') + '</ul>' + '</li>'; };
-                      
-                    $('#' + theaterId ).append('<ul class="movies">' + theaterMovies.map(movieHTML).join('') + '</ul>');
-                });
-            });
-        });
-    });
     
-    $('.times button').on('click', onTimeClick);
+    theaters.map(function(theater) { return theater.id; }).forEach(function(theaterId) {
+
+        var theaterTimes  = times.filter(function(time) { return time.theaterId == theaterId && (time.date > currentDate || time.time >= currentTime) });
+        var theaterMovies = movies.filter(onlyMoviesWithTimes(theaterTimes));
+        var augmentMovies = theaterMovies.map(function(movie){ return Object.assign(movie,{'times': theaterTimes.filter(function(time) { return time.movieId == movie.id }) }); });
+        var sortedMovies  = augmentMovies.sort(function(x,y) { return y.times.length - x.times.length; });                
+
+        $('#' + theaterId + ' .loading').remove();
+        $('#' + theaterId + ' .movies').append(sortedMovies.map(movieAsHTML).join(''));
+        $('#' + theaterId + ' .times button').on('click', onMovieTimeClick);
+    });
 }
 
 function showMain() {
@@ -158,7 +174,9 @@ function getDaySelections() {
 function getDaySelected() {
     var selectedDay = $('#daySelector').val();
     
-    return getDayISO861(selectedDay);
+    return new Promise(function(resolve, reject) { 
+        resolve({'date':getDayISO861(selectedDay)});
+    });
 }
 
 function getDaySelector() {
@@ -204,102 +222,145 @@ function getDayAsText(day) {
     return 'Saturday';
 }
 
-function getTheaters(callback) {    
-    callback([ 
-        {
-            'id'  : '11542',
-            'name': 'Alamo Drafthouse Cinema',
-            'url' : 'https://drafthouse.com/charlottesville'
-        },
-        {
-            'id'  : '11237',
-            'name': 'Violet Crown Charlottesville',
-            'url' : 'https://charlottesville.violetcrown.com/'
-        },
-        {
-            'id'  : '10657',
-            'name': 'Regal Stonefield Stadium 14',
-            'url' : 'https://www.regmovies.com/theaters/regal-stonefield-stadium-14-imax/C00318790965'
-        },
-        /*{
-            'id'  : '9997',
-            'name': 'The Paramount Theater',
-            'url' : 'https://www.theparamount.net/'
-        }*/
-    ]);
+function getTheaters(data) {
+    return new Promise(function(resolve, reject) {
+        
+        var theaters = [
+            {
+                'id'  : '11542',
+                'name': 'Alamo Drafthouse Cinema',
+                'url' : 'https://drafthouse.com/charlottesville'
+            },
+            {
+                'id'  : '11237',
+                'name': 'Violet Crown Charlottesville',
+                'url' : 'https://charlottesville.violetcrown.com/'
+            },
+            {
+                'id'  : '10657',
+                'name': 'Regal Stonefield Stadium 14',
+                'url' : 'https://www.regmovies.com/theaters/regal-stonefield-stadium-14-imax/C00318790965'
+            },
+            /*{
+                'id'  : '9997',
+                'name': 'The Paramount Theater',
+                'url' : 'https://www.theparamount.net/'
+            }*/
+        ];
+        
+        resolve(Object.assign({}, data, {'theaters':theaters}));
+    });
 }
 
-function getShowtimes(theaters, date, callback) {
+function getTimes(data) {
     
-    var theaterIds      = theaters.map(function(theater) { return theater.id }).filter(onlyUnique);
-    var cachedShowtimes = cacheGet('showtimes') || [];
-    var showtimes       = cachedShowtimes.filter(function(cachedShowtime) { return cachedShowtime.date == date && theaterIds.includes(cachedShowtime.theaterId) });
+    var theaters    = data.theaters;
+    var date        = data.date;
+    var theaterIds  = theaters.map(function(theater) { return theater.id }).filter(onlyUnique);
+    var cachedTimes = cacheGet('showtimes') || [];
+    var showtimes   = cachedTimes.filter(function(cachedShowtime) { return cachedShowtime.date == date && theaterIds.includes(cachedShowtime.theaterId) });
     
-    if(showtimes.length > 0) {
-        callback(showtimes); return;
-    }
+    return new Promise(function(resolve, reject) {
     
-    console.log('hit remot Showtimes');
-    new AWS.DynamoDB().batchGetItem({'RequestItems':{'DSI_Showtimes': { 'Keys': theaterIds.map(function(tid) { return {'Id' : {'S':date+tid } }; })} } }, function(err, data) {
+        if(showtimes.length > 0) {
+            resolve(Object.assign({}, data, {'times':showtimes})); return;
+        }
+        
+        console.log('hit remote Showtimes');
+        new AWS.DynamoDB().batchGetItem({'RequestItems':{'DSI_Showtimes': { 'Keys': theaterIds.map(function(tid) { return {'Id' : {'S':date+tid } }; })} } }, function(err, db) {
 
-        var showTimes = [];
-    
-        data.Responses.DSI_Showtimes.forEach(function(item) {
-            
-            if(item) {
+            var showtimes = [];
+        
+            db.Responses.DSI_Showtimes.forEach(function(item) {
                 
-                showtimes = showtimes.concat(item.Showtimes.L.map(function(showtime) {
-                    return {
-                        "theaterId": item.TheaterId.S,
-                        "movieId"  : showtime.M.MovieId.S,
-                        "date"     : item.Date.S,
-                        "time"     : showtime.M.Time.S,
-                        "matinee"  : showtime.M.Matinee.BOOL,
-                    };
-                }));
-            }
+                if(item) {
+                    
+                    showtimes = showtimes.concat(item.Showtimes.L.map(function(showtime) {
+                        return {
+                            "theaterId": item.TheaterId.S,
+                            "movieId"  : showtime.M.MovieId.S,
+                            "date"     : item.Date.S,
+                            "time"     : showtime.M.Time.S,
+                            "matinee"  : showtime.M.Matinee.BOOL,
+                        };
+                    }));
+                }
+                
+            });
             
+            cacheSet('showtimes', cachedTimes.concat(showtimes).filter(onlyUniqueShowtimes()));
+            resolve(Object.assign({}, data, {'times':showtimes}));
+        });
+    });
+}
+
+function getMovies(data) {    
+    
+    var movieIds     = data.times.map(function(showtime) { return showtime.movieId }).filter(onlyUnique);
+    var cachedMovies = cacheGet('movies') || [];
+    var movies       = cachedMovies.filter(onlyMoviesWithTimes(data.times));
+    
+    return new Promise(function(resolve, reject) {
+        
+        if(movies.length == movieIds.length) {
+            resolve(Object.assign({}, data, {'movies':movies})); return;
+        }    
+
+        console.log('hit remote Movies');
+        new AWS.DynamoDB().batchGetItem({'RequestItems':{'DSI_Movies': { 'Keys': movieIds.map(function(mid) { return {'Id' : {'S':mid } }; })} }}, function(err, db) {
+
+            var movies = [];
+
+            db.Responses.DSI_Movies.forEach(function(item) {
+                if(item) {
+
+                    movies = movies.concat({
+                        'id'      : item.Id.S,
+                        'title'   : item.Title.S,
+                        'genres'  : item.Genres.SS,
+                        'topCast' : item.TopCast.SS,
+                        'advisory': item.Advisory.S
+                    });
+                }
+            });
+
+            cacheSet('movies', cachedMovies.concat(movies).filter(onlyUniqueMovies()));
+            resolve(Object.assign({}, data, {'movies':movies})); return;
+        });
+    });
+
+}
+
+function getRecommendations(data) {
+    return getRandomRecommendations(data);
+}
+
+function getRandomRecommendations(data) {       
+    return new Promise(function(resolve, reject) {
+        
+        //var seed = parseInt(data.date.replace("-","").replace("-",""));
+        Math.seedrandom(data.date)
+        
+        var randomCount = Math.floor(Math.random() * 10);
+        var randomTimes = [];
+        
+        for(var i = 0; i < randomCount; i++) {
+            randomTimes.push(data.times[Math.floor(Math.random() * data.times.length)])
+        }
+        
+        recommendations = randomTimes.map(function(time) { 
+            return {
+                'movie'  : data.movies.find(function(m){ return m.id == time.movieId}).title, 
+                'theater': data.theaters.find(function(t) { return t.id == time.theaterId}).name.split(' ').splice(0,2).join(' '), 
+                'time'   : time.time
+            }; 
         });
         
-        cacheSet('showtimes', cachedShowtimes.concat(showtimes).filter(onlyUniqueShowtimes()));
-        callback(showtimes);
+        resolve(Object.assign({}, data, {'recommendations':recommendations})); return;
     });
 }
 
-function getMovies(showtimes, callback) {    
-
-    var movieIds     = showtimes.map(function(showtime) { return showtime.movieId }).filter(onlyUnique);
-    var cachedMovies = cacheGet('movies') || [];
-    var movies       = cachedMovies.filter(function(cachedMovie) { return movieIds.includes(cachedMovie.id) });
-    
-    if(movies.length == movieIds.length) {
-        callback(movies); return;
-    }    
-
-    console.log('hit remot Movies');
-    new AWS.DynamoDB().batchGetItem({'RequestItems':{'DSI_Movies': { 'Keys': movieIds.map(function(mid) { return {'Id' : {'S':mid } }; })} }}, function(err, data) {
-
-        var movies = [];
-
-        data.Responses.DSI_Movies.forEach(function(item) {
-            if(item) {
-
-                movies = movies.concat({
-                    'id'      : item.Id.S,
-                    'title'   : item.Title.S,
-                    'genres'  : item.Genres.SS,
-                    'topCast' : item.TopCast.SS,
-                    'advisory': item.Advisory.S
-                });
-            }
-        });
-
-        cacheSet('movies', cachedMovies.concat(movies).filter(onlyUniqueMovies()));
-        callback(movies);
-    });
-
-}
-
+//cache methods
 function cacheClearWholeCacheIfStale() {
         
     var oldStorageVersion = cacheGet('storageVersion');
@@ -328,7 +389,7 @@ function cacheCleanOldMoviesByShowtimes() {
     var cachedShowtimes  = cacheGet('showtimes') || [];
     var cachedMovies     = cacheGet('movies')    || []; 
 
-    cachedMovies = cachedMovies.filter(onlyUniqueMovies()).filter(onlyShowtimeMovies(cachedShowtimes));
+    cachedMovies = cachedMovies.filter(onlyUniqueMovies()).filter(onlyMoviesWithTimes(cachedShowtimes));
     
     cacheSet('movies', cachedMovies);
 }
@@ -344,7 +405,154 @@ function cacheSet(key, value) {
 function cacheClear() {
     window.localStorage.clear();
 }
+//cache methods
 
+//map methods
+function recommendationAsHTML(recommendation) {
+    return '<li class="recommendation">'
+         +   '<button class="o">'
+         +     '<div>' + recommendation.movie + '</div>'
+         +     '<div>' + recommendation.theater + '</div>'
+         +     '<div>@ ' + recommendation.time + '</div>'
+         +   '</button>'
+         + '</li>';
+}
+
+function timeAsHTML(time) {
+    return '<li class="time">'
+         +   '<button class="o">'
+         +      time
+         +   '</button>'
+         + '</li>';
+}
+
+function movieAsHTML(movie) {
+    return '<li class="movie">'
+         +    '<span class="title">'
+         +       movie.title
+         +    '</span>'
+         +    '<ul class="times">'
+         +        movie.times.map(function(t){return t.time;}).map(timeAsHTML).join('')
+         +    '</ul>'
+         + '</li>';
+}
+
+function loadingAsHTML() {
+    return '<div class="loading lds-css ng-scope" style="width: 100px; height: 100px;">'
+         +   '<div class="lds-spinner" style="100%;height:100%">'
+         +     '<div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>'
+         +   '</div>'
+         + '<style type="text/css">'
+         +   '@keyframes lds-spinner {'
+         +     '0% {'
+         +       'opacity: 1;'
+         +     '}'
+         +     '100% {'
+         +       'opacity: 0;'
+         +     '}'
+         +   '}'
+         +   '@-webkit-keyframes lds-spinner {'
+         +     '0% {'
+         +       'opacity: 1;'
+         +     '}'
+         +     '100% {'
+         +       'opacity: 0;'
+         +     '}'
+         +   '}'
+         +   '.lds-spinner {'
+         +     'position: relative;'
+         +   '}'
+         +   '.lds-spinner div {'
+         +     'left: 97px;'
+         +     'top: 48px;'
+         +     'position: absolute;'
+         +     '-webkit-animation: lds-spinner linear 1s infinite;'
+         +     'animation: lds-spinner linear 1s infinite;'
+         +     'background: #CCA43B;'
+         +     'width: 6px;'
+         +     'height: 24px;'
+         +     'border-radius: 20%;'
+         +     '-webkit-transform-origin: 3px 52px;'
+         +     'transform-origin: 3px 52px;'
+         +   '}'
+         +   '.lds-spinner div:nth-child(1) {'
+         +     '-webkit-transform: rotate(0deg);'
+         +     'transform: rotate(0deg);'
+         +     '-webkit-animation-delay: -0.909090909090909s;'
+         +     'animation-delay: -0.909090909090909s;'
+         +   '}'
+         +   '.lds-spinner div:nth-child(2) {'
+         +     '-webkit-transform: rotate(32.72727272727273deg);'
+         +     'transform: rotate(32.72727272727273deg);'
+         +     '-webkit-animation-delay: -0.818181818181818s;'
+         +     'animation-delay: -0.818181818181818s;'
+         +   '}'
+         +   '.lds-spinner div:nth-child(3) {'
+         +     '-webkit-transform: rotate(65.45454545454545deg);'
+         +     'transform: rotate(65.45454545454545deg);'
+         +     '-webkit-animation-delay: -0.727272727272727s;'
+         +     'animation-delay: -0.727272727272727s;'
+         +   '}'
+         +   '.lds-spinner div:nth-child(4) {'
+         +     '-webkit-transform: rotate(98.18181818181819deg);'
+         +     'transform: rotate(98.18181818181819deg);'
+         +     '-webkit-animation-delay: -0.636363636363636s;'
+         +     'animation-delay: -0.636363636363636s;'
+         +   '}'
+         +   '.lds-spinner div:nth-child(5) {'
+         +     '-webkit-transform: rotate(130.9090909090909deg);'
+         +     'transform: rotate(130.9090909090909deg);'
+         +     '-webkit-animation-delay: -0.545454545454545s;'
+         +     'animation-delay: -0.545454545454545s;'
+         +   '}'
+         +   '.lds-spinner div:nth-child(6) {'
+         +     '-webkit-transform: rotate(163.63636363636363deg);'
+         +     'transform: rotate(163.63636363636363deg);'
+         +     '-webkit-animation-delay: -0.454545454545455s;'
+         +     'animation-delay: -0.454545454545455s;'
+         +   '}'
+         +   '.lds-spinner div:nth-child(7) {'
+         +     '-webkit-transform: rotate(196.36363636363637deg);'
+         +     'transform: rotate(196.36363636363637deg);'
+         +     '-webkit-animation-delay: -0.363636363636364s;'
+         +     'animation-delay: -0.363636363636364s;'
+         +   '}'
+         +   '.lds-spinner div:nth-child(8) {'
+         +     '-webkit-transform: rotate(229.0909090909091deg);'
+         +     'transform: rotate(229.0909090909091deg);'
+         +     '-webkit-animation-delay: -0.272727272727273s;'
+         +     'animation-delay: -0.272727272727273s;'
+         +   '}'
+         +   '.lds-spinner div:nth-child(9) {'
+         +     '-webkit-transform: rotate(261.8181818181818deg);'
+         +     'transform: rotate(261.8181818181818deg);'
+         +     '-webkit-animation-delay: -0.181818181818182s;'
+         +     'animation-delay: -0.181818181818182s;'
+         +   '}'
+         +   '.lds-spinner div:nth-child(10) {'
+         +     '-webkit-transform: rotate(294.54545454545456deg);'
+         +     'transform: rotate(294.54545454545456deg);'
+         +     '-webkit-animation-delay: -0.090909090909091s;'
+         +     'animation-delay: -0.090909090909091s;'
+         +   '}'
+         +   '.lds-spinner div:nth-child(11) {'
+         +     '-webkit-transform: rotate(327.27272727272725deg);'
+         +     'transform: rotate(327.27272727272725deg);'
+         +     '-webkit-animation-delay: 0s;'
+         +     'animation-delay: 0s;'
+         +   '}'
+         +   '.lds-spinner {'
+         +     'width: 200px !important;'
+         +     'height: 200px !important;'
+         +     '-webkit-transform: translate(-100px, -100px) scale(.5) translate(100px, 100px);'
+         +     'transform: translate(-100px, -100px) scale(.5) translate(100px, 100px);'
+         +   '}'
+         +   '</style>'
+         + '</div>';
+}
+//map methods
+
+//filter,reduce methods
 function onlyUnique(value, index, list) {
     return list.indexOf(value) === index;
 }
@@ -363,12 +571,8 @@ function onlyUniqueShowtimes() {
     return onlyUniquePredciate(function(s1,s2) { return s1.theaterId == s2.theaterId && s1.movieId == s2.movieId && s1.time == s2.time && s1.date == s2.date });
 }
 
-function onlyShowtimeMovies(showtimes) {
-    var showtimeMovieIds = showtimes.map(function(showtime) { return showtime.movieId }).filter(onlyUnique);
-    
-    return function(movie) {
-        return showtimeMovieIds.includes(movie.id);
-    };
+function onlyMoviesWithTimes(times) {    
+    return function(movie) { return times.some(function(time) { return time.movieId == movie.id}); };
 }
 
 function onlyMovieTimes(movie) {
@@ -384,3 +588,10 @@ function group (items, key, map) {
     
     return items.reduce(function(dict, item) { (dict[item[key]] = dict[item[key]] || []).push(map(item)); return dict; }, {});
 };
+//filter,reduce methods
+
+function getRandom(seed, iter) {
+    var x = Math.sin(seed+iter) * 10000;
+    
+    return x - Math.floor(x);
+}

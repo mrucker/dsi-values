@@ -9,15 +9,9 @@ body {
     font-family: 'Open Sans'
 }
 
-#splash {
-    margin: 50px 0 0 50px;
-    color: #E5E5E5;
-}
-
 #toolbar {
     background-color: #CCA43B;
     height          : 25px;
-    /*overflow        : hidden;*/
 }
 
 #toolbar .left {
@@ -48,19 +42,21 @@ body {
     color: #E5E5E5;
 }
 
+#splash {
+    margin: 50px 0 0 50px;
+    color: #E5E5E5;
+}
+
 #main {    
     margin: 0 0 0 20px;
     color : #E5E5E5;
 }
 
-#main > div {
+#main h1 {
     margin: 10px 0 0 0;
 }
 
-#main .recommendations {
-    height : 100px;
-}
-
+/*fonts*/
 #main .theater > .title {
     font-size: 20px;
 }
@@ -71,6 +67,24 @@ body {
 
 #main .time {
     font-size: 10px;
+}
+/*fonts*/
+
+/*recommendations*/
+#main .recommendations {
+    height         : 50;
+    list-style-type: none;
+}
+
+#main .recommendations .recommendation {
+     display: inline;
+     padding: 0 0 0 10px;
+}
+/*recommendations*/
+
+/*theaters*/
+#main .theaters {
+    overflow: auto;
 }
 
 #main .theaters .theater {
@@ -99,7 +113,6 @@ body {
 #main .theaters .theater .movies .movie {
     margin: 0;
     padding: 0;
-    clear: left;
 }
 
 #main .theaters .theater .movies .movie .times {
@@ -109,37 +122,40 @@ body {
 #main .theaters .theater .movies .movie .times .time {
      display: inline;
      padding: 0 0 0 10px;
-     float: left;
 }
+/*theaters*/
 
-#main .theaters .theater .movies .movie .times .time button {
-    padding         : 1px;
+/*buttons*/
+#main button {
+    padding         : 3px;
+    margin          : 1px;
     border          : 1px solid #CCA43B;
     border-radius   : 2px;
     cursor          : pointer;
     
-    -webkit-transition-duration: 0.4s; /* Safari */
+    -webkit-transition-duration: 0.4s;
     transition-duration        : 0.4s;
 }
 
-#main .theaters .theater .movies .movie .times .time button.o {
+#main button.o {
      background-color: #242F40;
      color           : #E5E5E5;
 }
 
-#main .theaters .theater .movies .movie .times .time button.x {
+#main button.x {
      background-color: #CCA43B;
      color           : #242F40;
 }
 
-#main .theaters .theater .movies .movie .times .time button:hover{
+#main button:hover{
      background-color: #E5E5E5;
      color           : #242F40;
 }
 
-#main .theaters .theater .movies .movie .times .time button:active{
+#main button:active{
      background-color: #E5E5E5;
      color           : #242F40;
 }
+/*buttons*/
 
 /*https://coolors.co/363636-242f40-cca43b-e5e5e5-ffffff*/
