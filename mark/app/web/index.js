@@ -339,13 +339,13 @@ function getRandomRecommendations(data) {
     return new Promise(function(resolve, reject) {
         
         //var seed = parseInt(data.date.replace("-","").replace("-",""));
-        Math.seedrandom(data.date)
+        var rand = new Math.seedrandom(data.date);
         
-        var randomCount = Math.floor(Math.random() * 10);
+        var randomCount = Math.floor(rand() * 10);
         var randomTimes = [];
         
         for(var i = 0; i < randomCount; i++) {
-            randomTimes.push(data.times[Math.floor(Math.random() * data.times.length)])
+            randomTimes.push(data.times[Math.floor(rand() * data.times.length)])
         }
         
         recommendations = randomTimes.map(function(time) { 
@@ -589,9 +589,3 @@ function group (items, key, map) {
     return items.reduce(function(dict, item) { (dict[item[key]] = dict[item[key]] || []).push(map(item)); return dict; }, {});
 };
 //filter,reduce methods
-
-function getRandom(seed, iter) {
-    var x = Math.sin(seed+iter) * 10000;
-    
-    return x - Math.floor(x);
-}
