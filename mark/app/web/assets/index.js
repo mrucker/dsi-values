@@ -16,7 +16,7 @@ $(document).ready( function () {
 });
 
 //events
-function gapiInit() {
+function onGapiInit() {
     
     gapi.auth2.init().then(function(googleAuth) {
         if(googleAuth.currentUser.get().isSignedIn()) {
@@ -44,15 +44,19 @@ function onSignOut() {
 }
 
 function onMovieTimeClick() {
-    var time    = $(this).html();    
-    var movie   = $(this).closest(".movie").find(".title").html();
-    var theater = $(this).closest(".theater").find(".title").html()
-    
-    $(this).toggleClass('x').toggleClass('o');
+    var time      = $(this).data('time')
+    var movieId   = $(this).data('movieId');
+    var theaterId = $(this).data('theaterId');
+
+    $('button[data-theater-id="'+theaterId+'"][data-movie-id="'+movieId+'"][data-time="'+time+'"]').toggleClass('x').toggleClass('o');
 }
 
-function onRecommendationClick() {    
-    $(this).toggleClass('x').toggleClass('o');
+function onRecommendationClick() {
+    var time      = $(this).data('time')
+    var movieId   = $(this).data('movieId');
+    var theaterId = $(this).data('theaterId');
+    
+    $('button[data-theater-id="'+theaterId+'"][data-movie-id="'+movieId+'"][data-time="'+time+'"]').toggleClass('x').toggleClass('o');
 }
 //events
 
@@ -105,14 +109,10 @@ function initMain() {
     $('#main').append('<h1>Recommendations</h1><ol class="recommendations"></ol>');
     $('#main').append('<h1>Showtimes</h1><div class="theaters"></div>')
     
-    getTheaters().then(function(data) {
-        data.theaters.forEach(function(theater) {
-            $('#main .theaters').append('<div class="theater" id="' + theater.id + '"><a href="' + theater.url + '" class="title">' + theater.name + '</a><div class="movies"></div></div>')
-        });
-    })
+    getTheaters().then(function(data) { $('#main .theaters').append(data.theaters.map(theaterAsHTML)) });
 }
 
-function loadMain() {    
+function loadMain() {
 
     $('.recommendation').remove();
     $('.theaters .movie').remove();
@@ -142,16 +142,16 @@ function loadTheatersMoviesTimes(theaters, movies, times) {
     var currentDate = getDayISO861(0);
     var currentTime = getTimeISO861();
     
-    theaters.map(function(theater) { return theater.id; }).forEach(function(theaterId) {
+    theaters.forEach(function(theater) {
 
-        var theaterTimes  = times.filter(function(time) { return time.theaterId == theaterId && (time.date > currentDate || time.time >= currentTime) });
+        var theaterTimes  = times.filter(function(time) { return time.theaterId == theater.id && (time.date > currentDate || time.time >= currentTime) });
         var theaterMovies = movies.filter(onlyMoviesWithTimes(theaterTimes));
-        var augmentMovies = theaterMovies.map(function(movie){ return Object.assign(movie,{'times': theaterTimes.filter(function(time) { return time.movieId == movie.id }) }); });
+        var augmentMovies = theaterMovies.map(function(movie){ return Object.assign(movie,{ 'times': theaterTimes.filter(function(time) { return time.movieId == movie.id }) }); });
         var sortedMovies  = augmentMovies.sort(function(x,y) { return y.times.length - x.times.length; });                
 
-        $('#' + theaterId + ' .loading').remove();
-        $('#' + theaterId + ' .movies').append(sortedMovies.map(movieAsHTML).join(''));
-        $('#' + theaterId + ' .times button').on('click', onMovieTimeClick);
+        $('#' + theater.id + ' .loading').remove();
+        $('#' + theater.id + ' .movies').append(sortedMovies.map(movieAsHTML).join(''));
+        $('#' + theater.id + ' .times button').on('click', onMovieTimeClick);
     });
 }
 
@@ -350,8 +350,8 @@ function getRandomRecommendations(data) {
         
         recommendations = randomTimes.map(function(time) { 
             return {
-                'movie'  : data.movies.find(function(m){ return m.id == time.movieId}).title, 
-                'theater': data.theaters.find(function(t) { return t.id == time.theaterId}).name.split(' ').splice(0,2).join(' '), 
+                'movie'  : data.movies.find(function(m){ return m.id == time.movieId}), 
+                'theater': data.theaters.find(function(t) { return t.id == time.theaterId}), 
                 'time'   : time.time
             }; 
         });
@@ -410,31 +410,45 @@ function cacheClear() {
 //map methods
 function recommendationAsHTML(recommendation) {
     return '<li class="recommendation">'
-         +   '<button class="o">'
-         +     '<div>' + recommendation.movie + '</div>'
-         +     '<div>' + recommendation.theater + '</div>'
-         +     '<div>@ ' + recommendation.time + '</div>'
+         +   '<button class="o" ' + buttonDataAttributes(recommendation.theater.id, recommendation.movie.id, recommendation.time) + '>'
+         +     '<div> ' + recommendation.movie.title                                   + '</div>'
+         +     '<div> ' + recommendation.theater.name.split(' ').splice(0,2).join(' ') + '</div>'
+         +     '<div>@' + recommendation.time                                          + '</div>'
          +   '</button>'
          + '</li>';
 }
 
-function timeAsHTML(time) {
-    return '<li class="time">'
-         +   '<button class="o">'
-         +      time
-         +   '</button>'
-         + '</li>';
+function theaterAsHTML(theater) {
+    
+    return '<div class="theater" id="' + theater.id + '" data-theater-id="' + theater.id + '">'
+         +   '<a href="' + theater.url + '" class="title">' 
+         +     theater.name 
+         +   '</a>'
+         +   '<div class="movies">'
+         + '</div></div>'
 }
 
 function movieAsHTML(movie) {
-    return '<li class="movie">'
+    return '<li class="movie" data-movie-id="' + movie.id + '">'
          +    '<span class="title">'
          +       movie.title
          +    '</span>'
          +    '<ul class="times">'
-         +        movie.times.map(function(t){return t.time;}).map(timeAsHTML).join('')
+         +        movie.times.map(timeAsHTML).join('')
          +    '</ul>'
          + '</li>';
+}
+
+function timeAsHTML(time) {
+    return '<li class="time" data-time="' + time + '">'
+         +   '<button class="o" ' + buttonDataAttributes(time.theaterId, time.movieId, time.time) + '>'
+         +      time.time
+         +   '</button>'
+         + '</li>';
+}
+
+function buttonDataAttributes(theaterId, movieId, time) {
+    return 'data-theater-id="' + theaterId + '" data-movie-id="' + movieId + '" data-time="' + time + '"';
 }
 
 function loadingAsHTML() {
