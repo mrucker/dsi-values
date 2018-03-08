@@ -370,12 +370,14 @@ function getDaySelector() {
          + '</select>';
 }
 
-function getDayISO861(day) {
+function getDayISO861(daysAhead) {
     var date = new Date()
     
-    date.setDate(date.getDate() + parseInt(day));
+    var year  = String(date.getFullYear());
+    var month = String(date.getMonth()+1).padStart(2, '0');
+    var day   = String(date.getDate()+parseInt(daysAhead)).padStart(2, '0');
     
-    return date.toISOString().substring(0,10);
+    return year + "-" + month + "-" + day;
 }
 
 function getTimeISO861() {
