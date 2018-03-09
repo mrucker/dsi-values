@@ -7,7 +7,7 @@ function cognitoSync(datasetName) {
             onConflict: cognitoConflict
         };
         
-        new AWS.CognitoSyncManager().openOrCreateDataset('History', function(err, dataset) {
+        new AWS.CognitoSyncManager().openOrCreateDataset(datasetName, function(err, dataset) {
             dataset.synchronize(callback);
         });
     });
@@ -15,7 +15,7 @@ function cognitoSync(datasetName) {
 
 function cognitoGet(datasetName) {
     return new Promise(function(resolve, reject) {
-        new AWS.CognitoSyncManager().openOrCreateDataset('History', function(err, dataset) {
+        new AWS.CognitoSyncManager().openOrCreateDataset(datasetName, function(err, dataset) {
             dataset.getAllRecords(function(err, records) {
                 if(err) reject(err); 
                 else resolve(records.filter(function(r) { return r.value != ''; }).map(function(r) { return JSON.parse(r.value); }));

@@ -55,12 +55,12 @@ function onMovieTimeClick() {
     var selected = buttons.attr('class') == 'x';
     
     if(selected) {
-        historyRmv(theaterId, movieId, getDateSelected(), time).then(historySync).then(function() {
+        History.rmv(theaterId, movieId, getDateSelected(), time).then(History.sync).then(function() {
             buttons.toggleClass('x').toggleClass('o');
         });
     }
     else {
-        historyPut(theaterId, movieId, getDateSelected(), time).then(historySync).then(function() {
+        History.put(theaterId, movieId, getDateSelected(), time).then(History.sync).then(function() {
             buttons.toggleClass('x').toggleClass('o');
         });
     }
@@ -119,7 +119,7 @@ function loadMain() {
     };
     
     var addHistory = function(data) {
-        return historySync().then(historyGet).then(function(history) { data.history = history; return data; } )
+        return History.sync().then(History.get).then(function(history) { data.history = history; return data; } )
     };
     
     var addRecommendations = function(data) {
