@@ -10,6 +10,8 @@ $(document).ready( function () {
     
     hideSplash();
     hideMain();
+    
+    $('#main').append(loadingCSS());
 
     $('#signOut').on('click', onSignOut);
     $('#dateSelector').on('change', loadMain);
@@ -43,7 +45,6 @@ function onSignOut() {
     amazonSignOut();
     
     cacheSet('storageVersion', 0);
-    
 }
 
 function onMovieTimeClick() {
@@ -51,7 +52,7 @@ function onMovieTimeClick() {
     var movieId   = $(this).data('movieId');
     var theaterId = $(this).data('theaterId');
     
-    var buttons  = getButtons(theaterId, movieId, time);
+    var buttons  = buttonQuery(theaterId, movieId, time);
     var selected = buttons.attr('class') == 'x';
     
     if(selected) {
@@ -71,6 +72,7 @@ function onRecommendationClick() {
 }
 //events
 
+//sections
 function showSplash() {
     $('#splash').css('display','block');
 }
@@ -140,28 +142,28 @@ function loadMain() {
     $('.recommendation').remove();
     $('.theaters .movie').remove();
     
-    $('.recommendations').append(loadingAsHTML());
-    $('.theaters .theater').append(loadingAsHTML());
+    $('.recommendations').append(loadingHTML());
+    $('.theaters .theater').append(loadingHTML());
     
     return getDate().then(addTheaters).then(addTimes).then(addMovies).then(addHistory).then(loadTimes).then(addRecommendations).then(loadRecc);
 }
 
 function loadRecommendations(date, recommendations, history) {
     
-    var currentDate = getDateISO861(0);
-    var currentTime = getTimeISO861();
+    var currentDate = Date.currentDate();
+    var currentTime = Date.currentTime();
     
     $('.recommendations .loading').remove();
     $('.recommendations').append(recommendations.filter(function(r) { return date > currentDate || r.time > currentTime }).map(recommendationAsHTML));
     $('.recommendations button').on('click', onRecommendationClick);
     
-    history.filter(function(h) { return h.date == date }).forEach(function(h) { getButtons(h.theaterId, h.movieId, h.time).removeClass('o x').addClass('x'); })
+    history.filter(function(h) { return h.date == date }).forEach(function(h) { buttonQuery(h.theaterId, h.movieId, h.time).removeClass('o x').addClass('x'); })
 }
 
 function loadTheatersMoviesTimes(date, theaters, movies, times, history) {
     
-    var currentDate = getDateISO861(0);
-    var currentTime = getTimeISO861();
+    var currentDate = Date.currentDate();
+    var currentTime = Date.currentTime();
     
     theaters.forEach(function(theater) {
 
@@ -175,72 +177,11 @@ function loadTheatersMoviesTimes(date, theaters, movies, times, history) {
         $('#' + theater.id + ' .times button').on('click', onMovieTimeClick);
     });
     
-    history.filter(function(h) { return h.date == date }).forEach(function(h) { getButtons(h.theaterId, h.movieId, h.time).toggleClass('o').toggleClass('x'); })
+    history.filter(function(h) { return h.date == date }).forEach(function(h) { buttonQuery(h.theaterId, h.movieId, h.time).removeClass('o x').addClass('x'); })
 }
+//sections
 
-
-function getButtons(theaterId, movieId, time) {
-    return $('button[data-theater-id="'+theaterId+'"][data-movie-id="'+movieId+'"][data-time="'+time+'"]')
-}
-
-function getDateSelections() {
-    var days = $('#dateSelector option').map(function() { return parseInt(this.value); } ).toArray();
-    
-    return days.map(getDateISO861);
-}
-
-function getDateSelected() {
-    var selectedDay = $('#dateSelector').val();
-    
-    return getDateISO861(selectedDay);    
-}
-
-function getDateSelector() {
-
-    var day0 = 'Today';
-    var day1 = 'Tomorrow';
-    var day2 = getDateAsText(new Date().getDate() + 2);
-    var day3 = getDateAsText(new Date().getDate() + 3);
-    var day4 = getDateAsText(new Date().getDate() + 4);
-    
-    return '<select id="dateSelector">' 
-         +    '<option value="0">' + day0 + '</option>'
-         +    '<option value="1">' + day1 + '</option>'
-         +    '<option value="2">' + day2 + '</option>'
-         +    '<option value="3">' + day3 + '</option>'
-         //+    '<option value="4">' + day4 + '</option>'
-         + '</select>';
-}
-
-function getDateISO861(daysAhead) {
-    var date = new Date()
-    
-    var year  = String(date.getFullYear());
-    var month = String(date.getMonth()+1).padStart(2, '0');
-    var day   = String(date.getDate()+parseInt(daysAhead)).padStart(2, '0');
-    
-    return year + "-" + month + "-" + day;
-}
-
-function getTimeISO861() {
-    return new Date().toTimeString().substring(0,5);//will break if person calls website from outside of EST
-}
-
-function getDateAsText(day) {
-
-    day = day % 7;
-
-    if(day == 0) return 'Sunday';
-    if(day == 1) return 'Monday';
-    if(day == 2) return 'Tuesday';
-    if(day == 3) return 'Wednesday';
-    if(day == 4) return 'Thursday';
-    if(day == 5) return 'Friday';
-    
-    return 'Saturday';
-}
-
-//cache methods
+//cache
 function cacheClearWholeCacheIfStale() {
         
     var oldStorageVersion = cacheGet('storageVersion');
@@ -256,7 +197,7 @@ function cacheClearWholeCacheIfStale() {
 
 function cacheCleanOldShowtimesByDate() {
     
-    var currentDate     = getDateISO861(0);    
+    var currentDate     = Date.currentDate();
     var cachedShowtimes = cacheGet('showtimes') || [];
 
     cachedShowtimes = cachedShowtimes.filter(onlyUniqueShowtimes()).filter(function(s1) { return s1.date >= currentDate });
@@ -273,17 +214,11 @@ function cacheCleanOldMoviesByShowtimes() {
     
     cacheSet('movies', cachedMovies);
 }
-//cache methods
+//cache
 
-//map methods
+//as html
 function recommendationAsHTML(recommendation) {
-    return '<li class="recommendation">'
-         +   '<button class="o" ' + buttonDataAttributes(recommendation.theater.id, recommendation.movie.id, recommendation.time) + '>'
-         +     '<div> ' + recommendation.movie.title                                   + '</div>'
-         +     '<div> ' + recommendation.theater.name.split(' ').splice(0,2).join(' ') + '</div>'
-         +     '<div>@' + recommendation.time                                          + '</div>'
-         +   '</button>'
-         + '</li>';
+    return '<li class="recommendation">'+ buttonLarge(recommendation) + '</li>';
 }
 
 function theaterAsHTML(theater) {
@@ -308,14 +243,6 @@ function movieAsHTML(movie) {
 }
 
 function timeAsHTML(time) {
-    return '<li class="time" data-time="' + time + '">'
-         +   '<button class="o" ' + buttonDataAttributes(time.theaterId, time.movieId, time.time) + '>'
-         +      time.time
-         +   '</button>'
-         + '</li>';
+    return '<li class="time" data-time="' + time + '">' + buttonSmall(time) + '</li>';
 }
-
-function buttonDataAttributes(theaterId, movieId, time) {
-    return 'data-theater-id="' + theaterId + '" data-movie-id="' + movieId + '" data-time="' + time + '"';
-}
-//map methods
+//as html
