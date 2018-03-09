@@ -1,3 +1,7 @@
+function History() {
+
+}
+
 function historySync() {
     return cognitoSync('History');
 }
@@ -12,13 +16,13 @@ function historyPut(theaterId, movieId, date, time) {
 
 function historyRmv(theaterId, movieId, date, time) {
 
-    var key = historyKey(theaterId, movieId, date, time);    
-    
-    return cognitoRemove('History', key);
+    var key = historyKey(theaterId, movieId, date, time);
+
+    return cognitoRemove('history', key);
 }
 
 function historyGet() {
-    return cognitoGet('History');
+    return cognitoGet('history');
 }
 
 function historyKey(theaterId, movieId, date, time) {

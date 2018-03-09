@@ -1,15 +1,19 @@
-function getTimes(date, theaters) {
+function Time() {
+}
+
+Time.getCacheOrSource = function(date, theaterIds) {
+    var cachedTimes = Time.getCache(date, theaterIds);
     
-    var theaterIds = theaters.map(function(theater) { return theater.id; });
-    var cachedTimes = cacheGetOrDefault('times', []).filter(function(time) { return time.date == date && theaterIds.includes(time.theaterId) });
-    
-    if(cachedTimes.length > 0) {
+    if(cachedTimes.length != 0) 
         return Promise.resolve(cachedTimes);
-    }
-    
+    else
+        return Time.getSource(date, theaterIds).then(Time.setCache);
+}
+
+Time.getSource = function(date, theaterIds) {
     var toDynamoKeys = function (theaterId) { return {'Id' : {'S':date+theaterId } }; };
     
-    return dynamoBatchGet('DSI_Showtimes', theaterIds.map(toDynamoKeys)).then(function(items) {
+    return dynamoBatchGet('DSI_Showtimes', theaterIds.filter(onlyUnique).map(toDynamoKeys)).then(function(items) {
         
         var times = [];
         
@@ -28,7 +32,23 @@ function getTimes(date, theaters) {
 
         });
         
-        return Promise.resolve(times);
+        return times;
     });
+
 }
 
+Time.getCache = function(date, theaterIds) {
+    var getAll  = function(time) { return date      == null && theaterIds == null; };
+    var getThis = function(time) { return time.date == date && theaterIds.includes(time.theaterId); };
+    
+    return Cache.get('times', []).filter(function(time) { return getAll(time) || getThis(time); });
+}
+
+Time.setCache = function(times) {
+    Cache.set('times', Time.getCache().concat(times).filter(onlyUniqueTimes()));
+    return times;
+}
+
+Time.cleanCache = function(date, history) {
+    return Time.setCache(Time.getCache().filter(onlyUniqueTimes()).filter(function(time) { return time.date >= date }));
+}

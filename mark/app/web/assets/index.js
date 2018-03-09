@@ -1,11 +1,10 @@
 $(document).ready( function () {
     AWS.config.region = 'us-east-1';
 
-    //important to protect against memory overflow
-    cacheClearWholeCacheIfStale();
-    cacheCleanOldShowtimesByDate();
-    cacheCleanOldMoviesByShowtimes();
-    
+    Cache.cleanCache();
+    Time.cleanCache(Date.currentDate());
+    Movie.cleanCache(Time.getCache());
+
     initMain();
     
     hideSplash();
@@ -44,7 +43,7 @@ function onSignOut() {
     googleSignOut();
     amazonSignOut();
     
-    cacheSet('storageVersion', 0);
+    Cache.clear();
 }
 
 function onMovieTimeClick() {
@@ -112,11 +111,11 @@ function loadMain() {
     };
     
     var addTimes = function(data) {
-        return getTimes(data.date, data.theaters).then(function(times) { data.times = times; return data; });
+        return Time.getCacheOrSource(data.date, data.theaters.map(function(t) { return t.id; })).then(function(times) { data.times = times; return data; });
     };
     
     var addMovies = function(data) {
-        return getMovies(data.times.map(function(t) { return t.movieId }).filter(onlyUnique)).then(function(movies) { data.movies = movies; return data; });
+        return Movie.getCacheOrSource(data.times.map(function(t) { return t.movieId })).then(function(movies) { data.movies = movies; return data; });
     };
     
     var addHistory = function(data) {
@@ -184,35 +183,7 @@ function loadTheatersMoviesTimes(date, theaters, movies, times, history) {
 //cache
 function cacheClearWholeCacheIfStale() {
         
-    var oldStorageVersion = cacheGet('storageVersion');
-    var newStorageVersion = new Date().getDate(); //forces a cache refresh every day
     
-    if(oldStorageVersion != newStorageVersion) 
-    {
-        cacheClear();
-    }
-    
-    cacheSet('storageVersion', newStorageVersion);
-}
-
-function cacheCleanOldShowtimesByDate() {
-    
-    var currentDate     = Date.currentDate();
-    var cachedShowtimes = cacheGet('showtimes') || [];
-
-    cachedShowtimes = cachedShowtimes.filter(onlyUniqueShowtimes()).filter(function(s1) { return s1.date >= currentDate });
-
-    cacheSet('showtimes', cachedShowtimes);
-}
-
-function cacheCleanOldMoviesByShowtimes() {
-
-    var cachedShowtimes  = cacheGet('showtimes') || [];
-    var cachedMovies     = cacheGet('movies')    || []; 
-
-    cachedMovies = cachedMovies.filter(onlyUniqueMovies()).filter(onlyMoviesWithTimes(cachedShowtimes));
-    
-    cacheSet('movies', cachedMovies);
 }
 //cache
 

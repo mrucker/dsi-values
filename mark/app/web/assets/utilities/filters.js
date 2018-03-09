@@ -12,7 +12,7 @@ function onlyUniqueMovies() {
     return onlyUniquePredciate(function(m1,m2) { return m1.id == m2.id });
 }
 
-function onlyUniqueShowtimes() {
+function onlyUniqueTimes() {
     return onlyUniquePredciate(function(s1,s2) { return s1.theaterId == s2.theaterId && s1.movieId == s2.movieId && s1.time == s2.time && s1.date == s2.date });
 }
 
