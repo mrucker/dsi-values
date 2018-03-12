@@ -14,6 +14,7 @@ $(document).ready( function () {
 
     $('#signOut').on('click', onSignOut);
     $('#dateSelector').on('change', loadMain);
+    $('#algorithmSelector').on('change', loadMain);
 });
 
 //Events
@@ -69,7 +70,7 @@ function hideMain() {
 }
 
 function initMain() {
-    $('#toolbar .left' ).html('<a href="https://dsi.markrucker.net" class="strong"> Ethical Recommendations </a> <span>' + getDateSelector() + '</span>');
+    $('#toolbar .left' ).html('<a href="https://dsi.markrucker.net" class="strong"> Ethical Recommendations </a> <span>' + getDateSelector() + '</span><span>' + getAlgorithmSelector() + '</span>');
     $('#toolbar .right').html('<a href="https://dsi.markrucker.net" class="hover" id="signOut">Sign out</a>');
     
     $('#main').append('<h1>Recommendations</h1><ol class="recommendations"></ol>');
@@ -83,6 +84,11 @@ function loadMain() {
     var getDate = function() {
         return Promise.resolve({'date': getDateSelected()});
     };
+    
+    var getAlgorithm = function(data) {
+        data.algorithm = getAlgorithmSelected();
+        return data;
+    }
     
     var addTheaters = function(data) {
         return getTheaters().then(function(theaters) { data.theaters = theaters; return data; });
@@ -101,7 +107,7 @@ function loadMain() {
     };
     
     var addRecommendations = function(data) {
-        return getRecommendations(data.date, data.theaters, data.movies, data.times, data.history).then(function(recommendations) { data.recommendations = recommendations; return data; });
+        return getRecommendations(data.algorithm, data.date, data.theaters, data.movies, data.times, data.history).then(function(recommendations) { data.recommendations = recommendations; return data; });
     };
     
     var getData = function() {
@@ -122,7 +128,7 @@ function loadMain() {
     $('.recommendations').append(loadingHTML());
     $('.theaters .theater').append(loadingHTML());
     
-    return getDate().then(addTheaters).then(addTimes).then(addMovies).then(addHistory).then(loadTimes).then(addRecommendations).then(loadRecc);
+    return getDate().then(getAlgorithm).then(addTheaters).then(addTimes).then(addMovies).then(addHistory).then(loadTimes).then(addRecommendations).then(loadRecc);
 }
 //Main
 
