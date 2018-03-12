@@ -1,7 +1,16 @@
 function projectionRecommendation() {
+    return Promise.resolve(projectionAlgorithm());
+}
+
+function projectionAlgorithm() {
+    
+    var scalar = ma.dl.scalar;
+    var vector = ma.dl.vector;
+    var matrix = ma.dl.matrix;
+    
     var epsilon     = .001;
     var discount    = .9;
-    var states      = new ma.matrix([[],[],[],[]]);     //features for each state
+    var states      = new matrix([[1],[2],[3],[4]]);     //features for each state
     var structure   = [[0,1,3],[0,1,2],[3,1],[0,1],[0,1]] //should be same length as tE
     
     var finalChoices = [0,2,3];
@@ -14,14 +23,14 @@ function projectionRecommendation() {
         sE[tE[i]] += Math.pow(discount, tE.length-i-1);
     };
     
-    sE = new ma.vector(sE);
+    sE = new vector(sE);
     
     var rand_r = Array(states.size(1)).fill().map(function() { return Math.random(); });
     var rand_s = stateExpectation(rand_r, structure, discount);
     
     var rs = [rand_r];
-    var ss = [new ma.vector(rand_s)];
-    var sb = [new ma.vector(rand_s)];
+    var ss = [rand_s];
+    var sb = [rand_s];
     
     var ts = [undefined];
     
@@ -31,7 +40,7 @@ function projectionRecommendation() {
     ss[1] = stateExpectation(rs[1], structure, discount);
     
     //ts[1] = sqrt(sE'*ff*sE + sb[0]'*ff*sb[0] - 2*sE'*ff*sb[0]);
-    ts[1] = Math.sqrt(sE.trn().mul(ff).mul(sE).add(sb[0].trn().mul(ff).mul(sb[0]).sub(sE.trn().mul(ff).mul(sb[0])).mul(2)).toNumber());
+    ts[1] = Math.sqrt(sE.trn().mul(ff).mul(sE).add(sb[0].trn().mul(ff).mul(sb[0])).sub(sE.trn().mul(ff).mul(sb[0]).mul(new scalar(2))).toNumber());
         
     for(var i = 2; !(Math.abs(ts[i-1] - ts[i-2]) < epsilon); i++) {
 
@@ -51,9 +60,11 @@ function projectionRecommendation() {
     //  ts[i] = sqrt(sE'*ff*sE + sb[i-1]'*ff*sb[i-1] - 2*sE'*ff*sb[i-1]);    
         rs[i] = ff.mul(sE.sub(sb[i-1])).toArray();
         ss[i] = stateExpectation(rs[i], structure, discount);
-        ts[i] = Math.sqrt(sE.trn().mul(ff).mul(sE).add(sb[i-1].trn().mul(ff).mul(sb[i-1]).sub(sE.trn().mul(ff).mul(sb[0])).mul(2)).toNumber());
+        ts[i] = Math.sqrt(sE.trn().mul(ff).mul(sE).add(sb[i-1].trn().mul(ff).mul(sb[i-1])).sub(sE.trn().mul(ff).mul(sb[i-1]).mul(new scalar(2))).toNumber());
         
         //console.log(1,'Completed IRL iteration, i=%d, t=%f\n',i,ts[i]);
+        
+        if(i == 100) break;
     }
     
     return rs[i-1];
@@ -67,10 +78,10 @@ function stateExpectation(rewards, structure, discount) {
         expectation[structure[i].reduce(toBestState)] += Math.pow(discount, structure.length-i-1);
     };
     
-    return new ma.vector(expectation);
+    return new ma.dl.vector(expectation);
 }
 
 function k(states, states) {
-    return states.mul(states);
+    return states.mul(states.trn());
     //return dotProduct(states,states);//or something like this
 }
