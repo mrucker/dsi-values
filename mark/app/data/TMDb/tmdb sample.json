@@ -1,0 +1,25 @@
+documentation: https://www.themoviedb.org/documentation/api?language=en
+example query: https://api.themoviedb.org/3/search/movie?api_key=3abae1df4ebecc705375ee1265bbf63b&language=en-US&query=Black%20Panther&page=1&include_adult=false&year=2018
+
+{
+	"page": 1,
+	"total_results": 1,
+	"total_pages": 1,
+	"results": [{
+			"vote_count": 2729,
+			"id": 284054,
+			"video": false,
+			"vote_average": 7.4,
+			"title": "Black Panther",
+			"popularity": 347.671365,
+			"poster_path": "\/uxzzxijgPIY7slzFvMotPv8wjKA.jpg",
+			"original_language": "en",
+			"original_title": "Black Panther",
+			"genre_ids": [28, 12, 14, 878],
+			"backdrop_path": "\/b6ZJZHUdMEFECvGiDpJjlfUWela.jpg",
+			"adult": false,
+			"overview": "After the events of Captain America: Civil War, King T'Challa returns home to the reclusive, technologically advanced African nation of Wakanda to serve as his country's new leader. However, T'Challa soon finds that he is challenged for the throne from factions within his own country. When two foes conspire to destroy Wakanda, the hero known as Black Panther must team up with C.I.A. agent Everett K. Ross and members of the Dora Milaje, Wakandan special forces, to prevent Wakanda from being dragged into a world war.",
+			"release_date": "2018-02-13"
+		}
+	]
+}

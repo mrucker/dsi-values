@@ -4,6 +4,8 @@ const https    = require('https');
 const aws_sdk  = require('aws-sdk');
 const dynamodb = new aws_sdk.DynamoDB();
 
+let omdbCache = {};
+
 /**
  * Pass the data to send as `event.data`, and the request options as
  * `event.options`. For more information see the HTTPS module documentation
@@ -13,58 +15,24 @@ const dynamodb = new aws_sdk.DynamoDB();
  */
 exports.handler = (event, context, callback) => {
     
-    let url = getUrl();
-    
-    //console.log('Url:', url);
-    
-    const req = https.request(url, requestCallback);
-    
-    req.on('error', callback);
-    req.end();
+    getTmsData().then(tmsData => {
+        writeTmsMoviesData(tmsData);
+        writeTmsMoviesShowtimesData(tmsData);
+        writeTmsMoviesTheatersData(tmsData);
+    });
 };
 
-function requestCallback(res) {
-    let body = '';
-    
-    res.setEncoding('utf8');
-    
-    res.on('data', (chunk) => body += chunk);
-    res.on('end', () => {
+function writeTmsMoviesData(tmsMovies) {
+    tmsMovies.forEach(tmsMovie => {
+                
+        getOmdbData(tmsMovie).then(omdbMovie => {
+            writeMovieData(cleanTmsMovie(tmsMovie), cleanOmdbMovie(omdbMovie));
+        });
         
-        let movies = JSON.parse(body);
-        
-        writeMoviesData(movies);
-        writeMoviesShowtimesData(movies);
-        writeMoviesTheatersData(movies);
     });
 }
 
-function writeMoviesData(movies) {
-    movies.forEach(writeMovieData);
-}
-
-function writeMovieData(movie) {
-    let params = 
-    {
-        Item: {
-            "Id"       : {"S" : movie.tmsId },
-            "Title"    : {"S" : movie.title },
-            "Genres"   : {"SS": movie.genres  || ["NA"]},
-            "TopCast"  : {"SS": movie.topCast || ["NA"] },
-            "Advisory" : {"S" : movie.ratings ? movie.ratings[0].code : "NA" },
-        },
-        TableName          : "DSI_Movies",
-        //ConditionExpression: "attribute_not_exists(Id)"
-    };
-    
-    dynamodb.putItem(params, function(err,data) { 
-        if(err && err.code != "ConditionalCheckFailedException") {
-            console.log('Movie: %s; Error: %o', movie.title, err);
-        }
-    });
-}
-
-function writeMoviesShowtimesData(movies) {
+function writeTmsMoviesShowtimesData(tmsMovies) {
     
     let toMovieShowtime  = (m,s) => { 
         return {
@@ -81,14 +49,46 @@ function writeMoviesShowtimesData(movies) {
     let toFlat           = (l,x) => l.concat(x);
     let toGroup          = (d,x) => {(d[key(x)] = (d[key(x)] || [])).push(x); return d;};
     
-    let moviesShowtimes = movies.map(toMovieShowtimes).reduce(toFlat,[]).reduce(toGroup,{});
+    let moviesShowtimes = tmsMovies.map(toMovieShowtimes).reduce(toFlat,[]).reduce(toGroup,{});
     
-    Object.keys(moviesShowtimes).forEach(k => writeMovieShowtimesData(k, moviesShowtimes[k]));
+    Object.keys(moviesShowtimes).forEach(k => { /*console.log("key: ", k);*/ writeMovieShowtimesData(k, moviesShowtimes[k]); });
+}
+
+function writeTmsMoviesTheatersData(tmsMovies) {
+    // There are only three theaters in Charlottesville
+    // so for now I'm going to be lazy and add them manually
+}
+
+function writeMovieData(tmsData, omdbData) {
+    let params = 
+    {
+        Item: {
+            "Id"         : {"S" : tmsData.tmsId       },
+            "RootId"     : {"S" : tmsData.rootId      },
+            "Title"      : {"S" : tmsData.title       },
+            "ReleaseDate": {"S" : tmsData.releaseDate },
+            "Advisory"   : {"S" : tmsData.advisory    },
+            "Directors"  : {"SS": tmsData.directors   },
+            "Genres"     : {"SS": tmsData.genres      },
+            "TopCast"    : {"SS": tmsData.topCast     },
+            "Runtime"    : {"S" : omdbData.Runtime    },
+            "IMDbScore"  : {"S" : omdbData.imdbRating },
+            "MetaScore"  : {"S" : omdbData.Metascore  },
+            "RottenScore": {"S" : omdbData.RottenScore},
+
+        },
+        TableName          : "DSI_Movies",
+        //ConditionExpression: "attribute_not_exists(Id)"
+    };
+
+    dynamodb.putItem(params, function(err,data) { 
+        if(err && err.code != "ConditionalCheckFailedException") {
+            console.log('Movie: %s; Error: ', tmsData.title, err);
+        }
+    });
 }
 
 function writeMovieShowtimesData(id, list) {
-    
-    //console.log(id);
     
     let toDbList = (i) => {
         return { "M": {
@@ -119,23 +119,104 @@ function writeMovieShowtimesData(id, list) {
     });
 }
 
-function writeMoviesTheatersData(movies) {
-    // There are only three theaters in Charlottesville
-    // so for now I'm going to be lazy and add them manually
+function cleanTmsMovie(tmsData) {
+    tmsData.directors   = tmsData.directors   || ["NA"];
+    tmsData.genres      = tmsData.genres      || ["NA"];
+    tmsData.topCast     = tmsData.topCast     || ["NA"];
+    tmsData.releaseDate = tmsData.releaseDate || "NA";
+    tmsData.advisory    = tmsData.ratings ? tmsData.ratings[0].code : "NA" ;
+
+    return tmsData;
 }
 
-function getUrl() {
-    let baseURI    = process.env.baseURI;
-    let apiVersion = process.env.apiVersion;
-    let apiKey     = process.env.apiKey;
-    let zip        = process.env.zip;
-    let numDays    = process.env.numDays;
-    let startDate  = getStartDate();
+function cleanOmdbMovie(omdbData) {
+    if(omdbData.Response == "True" ) {
+        omdbData.Rotten      = omdbData.Ratings ? omdbData.Ratings.find(r => r.Source == "Rotten Tomatoes") : undefined;
+        omdbData.RottenScore = omdbData.Rotten  ? omdbData.Rotten.Value.replace("%",""): "NA";
+        omdbData.Runtime     = omdbData.Runtime ? omdbData.Runtime.replace(" min", "") : "NA";
+        
+        return omdbData;
+    }
+    else {
+        return {
+            "imdbRating" : "NA",
+            "Metascore"  : "NA",
+            "RottenScore": "NA",
+            "Runtime"    : "NA",
+        };
+    }
+}
 
-    let path  = `v${apiVersion}/movies/showings`;
-    let query = `startDate=${startDate}&numDays=${numDays}&zip=${zip}&api_key=${apiKey}`;
-    
-    return `${baseURI}/${path}?${query}`;
+function getTmsData() {
+    return new Promise((resolve, reject) => {
+        
+        const req = https.request(getTmsUrl(), res => {
+            let body = '';
+        
+            res.setEncoding('utf8');            
+            res.on('data', (chunk) => body += chunk);
+            res.on('end', () => { resolve(JSON.parse(body)); });
+        });
+        
+        req.on('error', reject);
+        req.end();
+    });
+}
+
+function getOmdbData(tmsMovie) {
+    return new Promise((resolve, reject) => {
+        
+        var url = getOmdbUrl(tmsMovie.title, tmsMovie.releaseYear);
+        
+        if(omdbCache[url]) {
+            resolve(omdbCache[url]);
+            return;
+        }
+        
+        const req = https.request(url, res => {
+            let body = '';
+        
+            res.setEncoding('utf8');
+            res.on('data', (chunk) => body += chunk);
+            res.on('end', () => { 
+                omdbCache[url] = JSON.parse(body);
+                resolve(omdbCache[url]);
+            });
+        });
+
+        req.on('error', reject);
+        req.end();
+    });
+}
+
+function getTmsUrl() {
+    let domain    = process.env.tmsApiDomain;
+    let version   = process.env.tmsApiVersion;
+    let key       = process.env.tmsApiKey;
+    let zip       = process.env.tmsZip;
+    let numDays   = process.env.tmsNumDays;
+    let startDate = getStartDate();
+
+    let path  = `/v${version}/movies/showings`;
+    let query = `?api_key=${key}&startDate=${startDate}&zip=${zip}&numDays=${numDays}`;
+
+    return `${domain}${path}${query}`;
+}
+
+function getOmdbUrl(tmsTitle, tmsReleaseYear) {
+
+    //This assumes two things: tms follows their historical naming convention and the title of the movie doesn't have 3D in it.
+    //Neither of these things are guaranteed, but looking through the history it looks like a small small fraction violate them.
+    let title   = encodeURIComponent(tmsTitle.replace(" 3D", "").replace(": The IMAX 2D Experience", ""));
+    let domain  = process.env.omdbApiDomain;
+    let version = process.env.omdbApiVersion;
+    let key     = process.env.omdbApiKey;
+    let year    = encodeURIComponent(tmsReleaseYear);
+
+    let path  = `/`;
+    let query = `?apikey=${key}&type=movie&t=${title}&y=${year}&v=${version}`;
+
+    return `${domain}${path}${query}`;
 }
 
 function getStartDate() {
@@ -145,13 +226,4 @@ function getStartDate() {
     var year  = date.getUTCFullYear();
 
     return `${year}-${month}-${day}`;
-}
-
-function getId () {
-    //r1 = Final value represents a number between 0 and 4.295 billion (we remove characters and convert to hex to save space)
-    //r2 = Final value represents a number between 0 and 795.36 days worth of miliseconds (we remove characters and convert to hex to save space)
-    var r1 = Math.floor(Math.random()*Math.pow(10,16)).toString(16).substring(0,8); 
-    var r2 = Date.now().toString(16).substring(2);
-
-    return r1 + r2;
 }

@@ -1,3 +1,5 @@
+https://data.tmsapi.com/v1.1/movies/showings?startDate=2018-02-15&zip=22903&api_key=e3rbxbs6mjp8mhk9wfz8e6gv
+
 [{
 		"tmsId": "MV008898760000",
 		"rootId": "12878741",
