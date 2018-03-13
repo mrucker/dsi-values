@@ -1,25 +1,53 @@
 function projectionRecommendation(date, theaters, movies, times, history) {
     
-    var movieRoots  = movies.reduce(function(dict,movie) { dict[movie.id] = movie.rootId; return dict; }, {})
-    var histDates   = history.map(function(h) { return h.date; }).toDistinct();
-    var reccTimes   = times.filter(function(t) { return histDates.includes(t.date) || t.date == date; });
-    var rootHistory = history.map(function(h){ return Object.assign({}, h, {"rootId": movieRoots[h.movieId]}); });
-    var rootTimes   = reccTimes.map(function(t){ return Object.assign({}, t, {"rootId": movieRoots[t.movieId]}); });    
-    var rootTimeI   = rootTimes.reduce(function(dict, rt, i) { dict[key(rt)] = i; return dict;  }, {});
-    var reccTimeI   = rootTimes.filter(function(t) { return t.date == date; } ).reduce(function(ls, rt, i) { return ls.concat([i]); }, []);
+    var movieRoot = movies.reduce(function(dict,movie) { dict[movie.id] = movie.rootId; return dict; }, {})
+    var histDates = history.map(function(h) { return h.date; }).toDistinct();
+
+    var addRootId = function(o){ return Object.assign({}, o, {"rootId": movieRoot[o.movieId]}); };
     
-    var theaterFeats = theatersToFeatures(theaters);
-    var movieFeats   = moviesToFeatures(movies, rootHistory);
-    var timeFeats    = timesToFeatures(reccTimes);
+    var allTimes = times.filter(function(t) { return histDates.includes(t.date) || t.date == date; }).map(addRootId);
+    var oldPicks = history.map(addRootId);
+    var nowPicks = allTimes.filter(function(t) { return t.date == date; });
     
-    var states     = rootTimes  .map(function(r) { return theaterFeats[r.theaterId].concat(timeFeats[r.date + r.time]).concat(movieFeats[r.rootId]); });   
-    var structure  = rootHistory.map(function(h) { return rootTimes.filter(function(r) { return r.date == h.date; }).map(function(r) { return rootTimeI[key(r)]; }); });
-    var trajectory = rootHistory.map(function(h) { return rootTimeI[key(h)]; });    
+    var allTimeI = allTimes.reduce(function(dict, rt, i) { dict[key(rt)] = i; return dict;  }, {});
+
+    var venueFeats = venuesToFeatures(theaters);
+    var movieFeats = moviesToFeatures(movies, oldPicks);
+    var timeFeats  = timesToFeatures(allTimes);
+    var dateFeats  = datesToFeatures(allTimes);
     
-    return Promise.resolve(projectionAlgorithm(states, structure, trajectory, reccTimeI, rootTimes));
+    var states = [];
+    var stateI = {};
+
+    var toStateVal = function(o) { return venueFeats[o.theaterId].concat(timeFeats[o.time]); };
+    var toStateKey = function(o) { return JSON.stringify(toStateVal(o)) };
+    
+    allTimes.forEach(function(t) {
+        
+        var stateVal = toStateVal(t);
+        var stateKey = toStateKey(t);
+        
+        if(stateI[stateKey] != undefined) {
+            return;
+        }
+        
+        stateI[stateKey] = states.length;
+        states.push(stateVal);
+    });
+
+    var addStateIndex = function(o) { return Object.assign({}, o, {"stateIndex": stateI[toStateKey(o)]}); }
+    
+    allTimes = allTimes.map(addStateIndex);
+    oldPicks = oldPicks.map(addStateIndex);
+    nowPicks = nowPicks.map(addStateIndex);
+
+    var structure  = oldPicks.map(function(p) { return allTimes.filter(function(t) { return t.date == p.date; }).map(function(t) { return t.stateIndex; }).toDistinct(); });
+    var trajectory = oldPicks.map(function(p) { return p.stateIndex; });
+    
+    return Promise.resolve(projectionAlgorithm(states, structure, trajectory, nowPicks));
 }
 
-function projectionAlgorithm(states, structure, trajectory, choices, times) {
+function projectionAlgorithm(states, structure, trajectory, choices) {
     
     var scalar = ma.dl.scalar;
     var vector = ma.dl.vector;
@@ -80,13 +108,15 @@ function projectionAlgorithm(states, structure, trajectory, choices, times) {
         
         if(i == 100) break;
     }
-    
+
+    console.log(sE.toArray());
+    console.log(ss[i-1].toArray());
     
     if(trajectory.length < 3) {
         return 'Please Select At Least Three Times To Receive a Recommendation'
     }
     
-    return choices.sort(function (a,b) { return rs[i-1][a] > rs[i-1][b] }).slice(0,5).map(function(c) { return times[c]; });
+    return choices.sort(function (a,b) { return rs[i-1][b.stateIndex] - rs[i-1][a.stateIndex] }).slice(0,5);
 }
 
 function stateExpectation(rewards, structure, discount) {
@@ -106,7 +136,7 @@ function k(states) {
 }
 
 //3x{0,1}   for theater
-function theatersToFeatures(theaters) {
+function venuesToFeatures(theaters) {
     
     var featuresByTheaterId = {}
     
@@ -157,25 +187,40 @@ function moviesToFeatures(movies, rootHistory) {
     return featuresByRootId;
 }
 
-//7x{0,1}   for dow
 //4x{0,1}   for morning/afternoon/evening/party
 function timesToFeatures(times) {
-
-    var dows = [0, 1, 2, 3, 4, 5, 6];
-    var tods = [{min:"08:00", max:"12:59"}, {min:"13:00", max:"17:59"}, {min:"18:00", max:"23:59"}, {min:"00:00", max:"07:59"}];
     
-    var featuresByDateTime = {}
+    var tods = [{min:"08:00", max:"12:59"}, {min:"13:00", max:"17:59"}, {min:"18:00", max:"23:59"}, {min:"00:00", max:"07:59"}];
+
+    var featuresByTime = {}
 
     times.forEach(function(t) {
-                
-        var oneHotDOW = dows.map (function(dw) { return (dw == new Date(t.date.replace("-","/")).getDay()) ? 1 : 0 });
+
         var oneHotTOD = tods.map (function(td) { return (td.min <= t.time && t.time <= td.max) ? 1 : 0});
-                
-        featuresByDateTime[t.date + t.time] = oneHotDOW.concat(oneHotTOD);
+
+        featuresByTime[t.time] = oneHotTOD;
     });
     
-    return featuresByDateTime;
+    return featuresByTime;
 }
+
+//7x{0,1}   for dow
+function datesToFeatures(times) {
+
+    var dows = [0, 1, 2, 3, 4, 5, 6];
+
+    var featuresByDate = {};
+
+    times.forEach(function(t) {
+
+        var oneHotDOW = dows.map (function(dw) { return (dw == new Date(t.date.replace("-","/")).getDay()) ? 1 : 0 });
+
+        featuresByDate[t.date] = oneHotDOW;
+    });
+
+    return featuresByDate;
+}
+
 
 function key(rootTime) {
     return rootTime.date + rootTime.time + rootTime.theaterId + rootTime.rootId;

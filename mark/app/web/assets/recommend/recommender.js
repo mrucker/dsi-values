@@ -18,7 +18,12 @@ function getRecommendations(algorithm, date, theaters, movies, times, history) {
     if(algorithm == 0) {
         return getRandomRecommendations(date, times).then(timesToReccObject);
     }
-    else {
+    
+    if(algorithm == 1) {
         return projectionRecommendation(date, theaters, movies, times, history).then(timesToReccObject);
+    }
+    
+    if(algorithm == 2) {
+        return Promise.resolve("Sorry but this algorithm hasn't been implemented yet.").then(timesToReccObject);
     }
 }
