@@ -1,19 +1,23 @@
 function Time() {
 }
 
-Time.getCacheOrSource = function(date, theaterIds) {
-    var cachedTimes = Time.getCache(date, theaterIds);
+Time.getCacheOrSource = function(dates, theaterIds) {
+    var oldCachedTimes = Time.getCache(dates, theaterIds);
+    var oldCachedDates = oldCachedTimes.map(function(t) { return t.date; }).toDistinct();        
+    var notCachedDates = dates.filter(function(d) { return !oldCachedDates.includes(d); });
     
-    if(cachedTimes.length != 0) 
-        return Promise.resolve(cachedTimes);
+    if(notCachedDates.length == 0) 
+        return Promise.resolve(oldCachedTimes);
     else
-        return Time.getSource(date, theaterIds).then(Time.setCache);
+        return Time.getSource(notCachedDates, theaterIds)
+                   .then(Time.setCache)
+                   .then(function(newCachedTimes) { return oldCachedTimes.concat(newCachedTimes); });
 }
 
-Time.getSource = function(date, theaterIds) {
-    var toDynamoKeys = function (theaterId) { return {'Id' : {'S':date+theaterId } }; };
+Time.getSource = function(dates, theaterIds) {
+    var toDynamoKeys = function (theaterId) { return dates.map(function(date) { return {'Id' : {'S':date+theaterId } }; }); };
     
-    return dynamoBatchGet('DSI_Showtimes', theaterIds.filter(onlyUnique).map(toDynamoKeys)).then(function(items) {
+    return dynamoBatchGet('DSI_Showtimes', theaterIds.filter(onlyUnique).map(toDynamoKeys).toFlat()).then(function(items) {
         
         var times = [];
         
@@ -37,9 +41,9 @@ Time.getSource = function(date, theaterIds) {
 
 }
 
-Time.getCache = function(date, theaterIds) {
-    var getAll  = function(time) { return date      == null && theaterIds == null; };
-    var getThis = function(time) { return time.date == date && theaterIds.includes(time.theaterId); };
+Time.getCache = function(dates, theaterIds) {
+    var getAll  = function(time) { return dates == null && theaterIds == null; };
+    var getThis = function(time) { return dates.includes(time.date) && theaterIds.includes(time.theaterId); };
     
     return Cache.get('times', []).filter(function(time) { return getAll(time) || getThis(time); });
 }
@@ -50,5 +54,7 @@ Time.setCache = function(times) {
 }
 
 Time.cleanCache = function(date, history) {
-    return Time.setCache(Time.getCache().filter(onlyUniqueTimes()).filter(function(time) { return time.date >= date }));
+    var historyDates = history.map(function(h) { return h.date; });
+    
+    return Time.setCache(Time.getCache().filter(onlyUniqueTimes()).filter(function(time) { return time.date >= date || historyDates.includes(time.date) }));
 }

@@ -1,9 +1,5 @@
 $(document).ready( function () {
-    AWS.config.region = 'us-east-1';
-
-    Cache.cleanCache();
-    Time.cleanCache(Date.currentDate());
-    Movie.cleanCache(Time.getCache());
+    AWS.config.region = 'us-east-1';    
 
     initMain();
     
@@ -33,7 +29,7 @@ function gapiInit() {
 function onSignIn() {
     
     amazonGoogleSignIn(googleSignIn());
-    
+
     loadMain();
     hideSplash();
     showMain();
@@ -79,7 +75,7 @@ function initMain() {
     getTheaters().then(function(theaters) { $('#main .theaters').append(theaters.map(theaterAsHTML)) });
 }
 
-function loadMain() {    
+function loadMain(skipTimes) {
     
     var getDate = function() {
         return Promise.resolve({'date': getDateSelected()});
@@ -88,47 +84,69 @@ function loadMain() {
     var getAlgorithm = function(data) {
         data.algorithm = getAlgorithmSelected();
         return data;
-    }
+    };
+    
+    var sleepHalfSecond = function(data) {
+        return new Promise(function(resolve,reject) {
+            setTimeout(function(){ resolve(data); }, 100);
+        });
+    };
+    
+    var addHistory = function(data) {
+        return History.sync().then(History.get).then(function(history) { 
+            //not perfect, but put here to reduce the number of syncs required
+            Cache.cleanCache();
+            Time .cleanCache(Date.currentDate(), history);
+            Movie.cleanCache(Time.getCache());
+                        
+            data.history = history; return data; 
+        });
+    };
     
     var addTheaters = function(data) {
         return getTheaters().then(function(theaters) { data.theaters = theaters; return data; });
     };
     
     var addTimes = function(data) {
-        return Time.getCacheOrSource(data.date, data.theaters.map(function(t) { return t.id; })).then(function(times) { data.times = times; return data; });
+        var dates      = data.history.map(function(h) { return h.date; }).concat([data.date]).filter(onlyUnique);
+        var theaterIds = data.theaters.map(function(t) { return t.id; });
+        
+        return Time.getCacheOrSource(dates, theaterIds).then(function(times) { data.times = times; return data; });
     };
     
     var addMovies = function(data) {
         return Movie.getCacheOrSource(data.times.map(function(t) { return t.movieId })).then(function(movies) { data.movies = movies; return data; });
-    };
-    
-    var addHistory = function(data) {
-        return History.sync().then(History.get).then(function(history) { data.history = history; return data; } )
+    };   
+        
+    var loadTimes = function(data) {
+        if(!skipTimes) { loadTheatersMoviesTimes(data.date, data.theaters, data.movies, data.times, data.history); } return data;
     };
     
     var addRecommendations = function(data) {
         return getRecommendations(data.algorithm, data.date, data.theaters, data.movies, data.times, data.history).then(function(recommendations) { data.recommendations = recommendations; return data; });
     };
     
-    var getData = function() {
-        return ;
-    };
-    
-    var loadTimes = function(data) {
-        loadTheatersMoviesTimes(data.date, data.theaters, data.movies, data.times, data.history); return data;
-    };
-    
-    var loadRecc = function(data) {
+    var loadRecommend = function(data) {
         loadRecommendations(data.date, data.recommendations, data.history); return data;
     };
-    
+        
+    if(!skipTimes) {
+        $('.theaters .movie').remove();
+        $('.theaters .theater').append(loadingHTML());
+    }
+
     $('.recommendation').remove();
-    $('.theaters .movie').remove();
-    
     $('.recommendations').append(loadingHTML());
-    $('.theaters .theater').append(loadingHTML());
     
-    return getDate().then(getAlgorithm).then(addTheaters).then(addTimes).then(addMovies).then(addHistory).then(loadTimes).then(addRecommendations).then(loadRecc);
+    return getDate().then(getAlgorithm)
+                    .then(sleepHalfSecond)
+                    .then(addHistory)
+                    .then(addTheaters)
+                    .then(addTimes)
+                    .then(addMovies)
+                    .then(loadTimes)
+                    .then(addRecommendations)
+                    .then(loadRecommend);
 }
 //Main
 
@@ -139,10 +157,10 @@ function loadRecommendations(date, recommendations, history) {
     var currentTime = Date.currentTime();
     
     $('.recommendations .loading').remove();
-    $('.recommendations').append(recommendations.filter(function(r) { return date > currentDate || r.time > currentTime }).map(recommendationAsHTML));
+    $('.recommendations').append(recommendations.filter(function(r) { return date > currentDate || r.time > currentTime || r.time == '' }).map(recommendationAsHTML));
     $('.recommendations button').on('click', onRecommendationClick);
     
-    history.filter(function(h) { return h.date == date }).forEach(function(h) { buttonQuery(h.theaterId, h.movieId, h.time).removeClass('o x').addClass('x'); })
+    history.filter(function(h) { return h.date == date }).forEach(function(h) { buttonQuery(h.theaterId, h.movieId, h.time).removeClass('o x').addClass('x'); });
 }
 
 function recommendationAsHTML(recommendation) {
@@ -162,7 +180,7 @@ function loadTheatersMoviesTimes(date, theaters, movies, times, history) {
     
     theaters.forEach(function(theater) {
 
-        var theaterTimes  = times.filter(function(time) { return time.theaterId == theater.id && (time.date > currentDate || time.time >= currentTime) });
+        var theaterTimes  = times.filter(function(time) { return time.date == date && time.theaterId == theater.id && (time.date > currentDate || time.time >= currentTime) });
         var theaterMovies = movies.filter(onlyMoviesWithTimes(theaterTimes));
         var augmentMovies = theaterMovies.map(function(movie){ return Object.assign(movie,{ 'times': theaterTimes.filter(function(time) { return time.movieId == movie.id }) }); });
         var sortedMovies  = augmentMovies.sort(function(x,y) { return y.times.length - x.times.length; });                
@@ -211,12 +229,12 @@ function onTimeClick() {
     if(selected) {
         History.rmv(theaterId, movieId, getDateSelected(), time).then(History.sync).then(function() {
             buttons.toggleClass('x').toggleClass('o');
-        });
+        }).then(function(){loadMain(true);});
     }
     else {
         History.put(theaterId, movieId, getDateSelected(), time).then(History.sync).then(function() {
             buttons.toggleClass('x').toggleClass('o');
-        });
+        }).then(function(){loadMain(true);});
     }
 }
 //List

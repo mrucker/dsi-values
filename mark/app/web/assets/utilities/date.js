@@ -36,3 +36,12 @@ Date.currentDate = function() {
 Date.currentTime = function() {
     return new Date().toMyTimeString();
 }
+
+Date.daysBetween = function(date1, date2 ) {   
+    var one_day_ms    = 1000*60*60*24;
+    var date1_ms      = date1.getTime();
+    var date2_ms      = date2.getTime();
+    var difference_ms = Math.abs(date2_ms - date1_ms);
+    
+    return Math.floor(difference_ms/one_day_ms); 
+ } 

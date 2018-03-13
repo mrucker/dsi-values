@@ -31,6 +31,15 @@ function amazonSignIn(email, login) {
       // and multiple users are signed in at once, used for caching
       LoginId: email
     });
+    
+    //See use case 17 in this readme (https://github.com/aws/aws-amplify/tree/master/packages/amazon-cognito-identity-js);
+    AWS.config.credentials.refresh((error) => {
+        if (error) {
+            console.error(error);
+        } else {
+            console.log('Successfully logged in!');
+        }
+    });
 }
 
 function amazonSignOut() {

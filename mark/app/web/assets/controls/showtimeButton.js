@@ -1,8 +1,8 @@
 function buttonLarge(recommendation) {
     return '<button class="o" ' + dataAttributes(recommendation.theater.id, recommendation.movie.id, recommendation.time) + '>'
-         +     '<div> ' + recommendation.movie.title                                   + '</div>'
-         +     '<div> ' + recommendation.theater.name.split(' ').splice(0,2).join(' ') + '</div>'
-         +     '<div>@' + recommendation.time                                          + '</div>'
+         +     '<div> ' + recommendation.movie   + '</div>'
+         +     '<div> ' + recommendation.theater + '</div>'
+         +     '<div> ' + recommendation.time    + '</div>'
          + '</button>'
 }
 

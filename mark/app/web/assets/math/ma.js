@@ -200,6 +200,10 @@ ma.dl.vector = function(array) {
     //ma.dl.call(this, array.rankType ? array : dl.tensor2d(array, [array.length,1]));
     ma.dl.call(this, array.rankType ? array : dl.tensor2d(array, [array.length,1]));
     
+    this.size = function() {
+        return this.getTensor().shape;
+    };
+    
     this.trn = function() {
         return new ma.dl.vector(this.getTensor().transpose());
     };
@@ -236,15 +240,13 @@ ma.dl.vector = function(array) {
 ma.dl.matrix = function(matrix) {
 
     ma.dl.call(this, matrix.rankType ? matrix : dl.tensor2d(matrix));
-     
-    
+         
     this.size = function(dim) {
-        var size = [matrix[0].length, matrix.length];
+
+        if(dim == 0) return this.getTensor().shape[0];
+        if(dim == 1) return this.getTensor().shape[1];
         
-        if(dim == 0) return size[0];
-        if(dim == 1) return size[1];
-        
-        return size;
+        return this.getTensor().shape;
     };
 
     this.mul = function(object) {        

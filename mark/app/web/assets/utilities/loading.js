@@ -101,14 +101,14 @@ function loadingCSS() {
          +     '.lds-spinner {'
          +       'width: 200px !important;'
          +       'height: 200px !important;'
-         +       '-webkit-transform: translate(-100px, -100px) scale(.5) translate(100px, 100px);'
-         +       'transform: translate(-100px, -100px) scale(.5) translate(100px, 100px);'
+         +       '-webkit-transform: translate(-100px, -100px) scale(.25) translate(100px, 100px);'
+         +       'transform: translate(-100px, -100px) scale(.25) translate(100px, 100px);'
          +     '}'
          + '</style>';
 }
 
 function loadingHTML() {
-    return '<div class="loading lds-css ng-scope" style="width: 100px; height: 100px;">'    
+    return '<div class="loading lds-css ng-scope" style="width: 50px; height: 50px;">'    
          +     '<div class="lds-spinner" style="100%;height:100%">'
          +         '<div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div>'
          +     '</div>'

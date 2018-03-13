@@ -18,14 +18,20 @@ Movie.getSource = function(movieIds) {
     return dynamoBatchGet('DSI_Movies', movieIds.filter(onlyUnique).map(toDynamoKeys)).then(function(items) {
         var movies = items.filter(function(item) { return item; }).map(function(item) {
             return {
-                'id'      : item.Id.S,
-                'title'   : item.Title.S,
-                'genres'  : item.Genres.SS,
-                'topCast' : item.TopCast.SS,
-                'advisory': item.Advisory.S
+                'id'         : item.Id.S,
+                'rootId'     : item.RootId.S,
+                'title'      : item.Title.S,
+                'releaseDate': item.ReleaseDate.S,
+                'advisory'   : item.Advisory.S,
+                'directors'  : item.Directors.SS,
+                'genres'     : item.Genres.SS,
+                'actors'     : item.TopCast.SS,
+                'runtime'    : parseInt(item.Runtime.S),
+                'imdbScore'  : parseInt(item.IMDbScore.S),
+                'metaScore'  : parseInt(item.MetaScore.S),
+                'rottenScore': parseInt(item.RottenScore.S)
             };
         });
-
         return movies;
     });
 }

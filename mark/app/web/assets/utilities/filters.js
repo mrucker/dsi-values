@@ -1,3 +1,11 @@
+Array.prototype.toFlat = function() {
+    return [].concat.apply([], this);
+};
+
+Array.prototype.toDistinct = function() {
+    return this.filter(onlyUnique);
+};
+
 function onlyUnique(value, index, list) {
     return list.indexOf(value) === index;
 }
@@ -30,6 +38,5 @@ function onlyMovieTimes(movie) {
 function group (items, key, map) {
     
     map = map || function(item) { return item; };
-    
     return items.reduce(function(dict, item) { (dict[item[key]] = dict[item[key]] || []).push(map(item)); return dict; }, {});
 };
