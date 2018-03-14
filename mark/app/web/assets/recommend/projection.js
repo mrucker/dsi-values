@@ -1,5 +1,5 @@
-function projectionRecommendation(date, theaters, movies, times, history) {
-    
+function projectionRecommendation(date, theaters, movies, times, history, kernel) {
+
     var movieRoot = movies.reduce(function(dict,movie) { dict[movie.id] = movie.rootId; return dict; }, {})
     var histDates = history.map(function(h) { return h.date; }).toDistinct();
 
@@ -44,10 +44,10 @@ function projectionRecommendation(date, theaters, movies, times, history) {
     var structure  = oldPicks.map(function(p) { return allTimes.filter(function(t) { return t.date == p.date; }).map(function(t) { return t.stateIndex; }).toDistinct(); });
     var trajectory = oldPicks.map(function(p) { return p.stateIndex; });
     
-    return Promise.resolve(projectionAlgorithm(states, structure, trajectory, nowPicks));
+    return Promise.resolve(projectionAlgorithm(states, structure, trajectory, nowPicks, kernel));
 }
 
-function projectionAlgorithm(states, structure, trajectory, choices) {
+function projectionAlgorithm(states, structure, trajectory, choices, kernel) {
     
     var scalar = ma.dl.scalar;
     var vector = ma.dl.vector;
@@ -56,10 +56,8 @@ function projectionAlgorithm(states, structure, trajectory, choices) {
     var epsilon     = .001;
     var discount    = .9;
     
-    states = new matrix(states).trn(); //the way I populate states is backwards so I transpose here
-    
     var cE = trajectory;                   
-    var sE = Array(states.size(1)).fill(0);
+    var sE = Array(states.length).fill(0);
     
     for(var i = 0; i < cE.length; i++) {
         sE[cE[i]] += Math.pow(discount, cE.length-i-1);
@@ -67,7 +65,7 @@ function projectionAlgorithm(states, structure, trajectory, choices) {
     
     sE = new vector(sE);
     
-    var rand_r = Array(states.size(1)).fill().map(function() { return Math.random(); });
+    var rand_r = Array(states.length).fill().map(function() { return Math.random(); });
     var rand_s = stateExpectation(rand_r, structure, discount);
     
     var rs = [rand_r];
@@ -76,7 +74,7 @@ function projectionAlgorithm(states, structure, trajectory, choices) {
     
     var ts = [undefined];
     
-    var ff = k(states);
+    var ff = kernel(states);
     
     rs[1] = ff.mul(sE.sub(sb[0])).toArray();
     ss[1] = stateExpectation(rs[1], structure, discount);
@@ -109,8 +107,8 @@ function projectionAlgorithm(states, structure, trajectory, choices) {
         if(i == 100) break;
     }
 
-    console.log(sE.toArray());
-    console.log(ss[i-1].toArray());
+    console.log("Expert: ", sE.toArray());
+    console.log("Learned: ", ss[i-1].toArray());
     
     if(trajectory.length < 3) {
         return 'Please Select At Least Three Times To Receive a Recommendation'
@@ -128,11 +126,6 @@ function stateExpectation(rewards, structure, discount) {
     };
     
     return new ma.dl.vector(expectation);
-}
-
-function k(states) {    
-    return states.trn().mul(states);
-    //return dotProduct(states,states);//or something like this
 }
 
 //3x{0,1}   for theater

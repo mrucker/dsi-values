@@ -132,10 +132,12 @@ function loadMain(skipTimes) {
         
     if(!skipTimes) {
         $('.theaters .movie').remove();
+        $('.theaters .loading').remove();
         $('.theaters .theater').append(loadingHTML());
     }
 
     $('.recommendation').remove();
+    $('.recommendations .loading').remove();
     $('.recommendations').append(loadingHTML());
     
     return getDate().then(getAlgorithm)

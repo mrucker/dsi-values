@@ -191,6 +191,10 @@ ma.dl.scalar = function(number) {
         return new ma.dl.scalar(this.getTensor().div(object.getTensor()));
     };
     
+    this.print = function() {
+        return this.getTensor().print();
+    }
+    
     this.toNumber = function() {
         return this.getTensor().dataSync()[0];
     };
@@ -204,25 +208,32 @@ ma.dl.vector = function(array) {
         return this.getTensor().shape;
     };
     
+    this.norm = function() {
+        return new ma.dl.scalar(this.getTensor().norm());
+    }
+    
     this.trn = function() {
         return new ma.dl.vector(this.getTensor().transpose());
     };
     
-    this.mul = function(object) {
-        
-        if(object.getTensor().rankType == "0") {
-            return new ma.dl.vector(this.getTensor().mul(object.getTensor()));
+    this.mul = function(that) {
+
+        var thisTensor = this.getTensor();
+        var thatTensor = dl.cast(that.getTensor(), thisTensor.dtype);
+
+        if(thatTensor.rankType == "0") {
+            return new ma.dl.vector(thisTensor.mul(thatTensor));
         }
-        
-        if(object.getTensor().rankType == "2" && this.getTensor().shape[0] == 1 && object.getTensor().shape[1] == 1) {
-            return new ma.dl.scalar(this.getTensor().matMul(object.getTensor()));
+
+        if(thatTensor.rankType == "2" && thisTensor.shape[0] == 1 && thatTensor.shape[1] == 1) {
+            return new ma.dl.scalar(thisTensor.matMul(thatTensor));
         }
-        
-        if(object.getTensor().rankType == "2" && (this.getTensor().shape[0] == 1 || object.getTensor().shape[1] == 1)) {
-            return new ma.dl.vector(this.getTensor().matMul(object.getTensor()));
+
+        if(thatTensor.rankType == "2" && (thisTensor.shape[0] == 1 || thatTensor.shape[1] == 1)) {
+            return new ma.dl.vector(thisTensor.matMul(thatTensor));
         }
-        
-        return new ma.dl.matrix(this.getTensor().matMul(object.getTensor()));
+
+        return new ma.dl.matrix(thisTensor.matMul(thatTensor));
     };
     
     this.add = function(object) {
@@ -233,6 +244,10 @@ ma.dl.vector = function(array) {
         return new ma.dl.vector(this.getTensor().sub(object.getTensor()));
     };
 
+    this.print = function() {
+        return this.getTensor().print();
+    }
+    
     this.toArray = function() {
         return this.getTensor().dataSync();
     };
@@ -248,21 +263,45 @@ ma.dl.matrix = function(matrix) {
         
         return this.getTensor().shape;
     };
+    
+    this.div = function(den) {
+        return new ma.dl.matrix(this.getTensor().div(den.getTensor()));
+    }
 
-    this.mul = function(object) {        
+    this.mul = function(that) {        
         
-        if(object.getTensor().rankType == "0") {
-            return new ma.dl.matrix(this.getTensor().mul(object.getTensor()));
+        var thisTensor = this.getTensor();
+        var thatTensor = dl.cast(that.getTensor(), thisTensor.dtype);
+
+        if(thatTensor.rankType == "0") {
+            return new ma.dl.matrix(thisTensor.mul(thatTensor));
         }
         
-        if(object.getTensor().rankType == "2" && object.getTensor().shape[1] == 1) {
-            return new ma.dl.vector(this.getTensor().matMul(object.getTensor()));
+        if(thatTensor.rankType == "2" && thatTensor.shape[1] == 1) {
+            return new ma.dl.vector(thisTensor.matMul(thatTensor));
         }
         
-        return new ma.dl.matrix(this.getTensor().matMul(object.getTensor()));
+        return new ma.dl.matrix(thisTensor.matMul(thatTensor));
     };
+    
+    this.exp = function() {
+        return new ma.dl.matrix(this.getTensor().exp());
+    }
+    
+    this.pow = function(exp) {
+        return new ma.dl.matrix(this.getTensor().pow(dl.scalar(exp)));
+    }
     
     this.trn = function() {
         return new ma.dl.matrix(this.getTensor().transpose());
     }
+    
+    this.col = function(index) {
+        return new ma.dl.vector(this.getTensor().slice([0,index],[this.size(0),1]));
+    }
+    
+    this.print = function() {
+        return this.getTensor().print();
+    }
+    
 };
