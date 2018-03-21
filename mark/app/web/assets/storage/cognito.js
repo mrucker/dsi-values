@@ -2,23 +2,29 @@ function cognitoSync(datasetName) {
     
     return new Promise(function(resolve, reject) {
         callback = {
-            onSuccess : function(dataset, updates) { resolve(); },
+            onSuccess : function(dataset, updates) { console.log("cognitoSynced"); resolve(); },
             onFailure : function(err) { reject(err); },
             onConflict: cognitoConflict
         };
         
-        new AWS.CognitoSyncManager().openOrCreateDataset(datasetName, function(err, dataset) {
-            dataset.synchronize(callback);
+        console.log("cognitoSyncing");
+        AWS.config.credentials.get(function() {
+            new AWS.CognitoSyncManager().openOrCreateDataset(datasetName, function(err, dataset) {
+                dataset.synchronize(callback);
+            });
         });
     });
 }
 
 function cognitoGet(datasetName) {
-    return new Promise(function(resolve, reject) {
-        new AWS.CognitoSyncManager().openOrCreateDataset(datasetName, function(err, dataset) {
-            dataset.getAllRecords(function(err, records) {
-                if(err) reject(err); 
-                else resolve(records.filter(function(r) { return r.value != ''; }).map(function(r) { return JSON.parse(r.value); }));
+    return new Promise(function(resolve, reject) {        
+        AWS.config.credentials.get(function() {
+            new AWS.CognitoSyncManager().openOrCreateDataset(datasetName, function(err, dataset) {
+                dataset.getAllRecords(function(err, records) {
+                    console.log("cognitoGot");
+                    if(err) reject(err);                    
+                    else resolve(records.filter(function(r) { return r.value != ''; }).map(function(r) { return JSON.parse(r.value); }));
+                });
             });
         });
     });
@@ -27,9 +33,12 @@ function cognitoGet(datasetName) {
 function cognitoPut(datasetName, key, value) {
 
     return new Promise(function(resolve, reject) {
-        new AWS.CognitoSyncManager().openOrCreateDataset(datasetName, function(err, dataset) {
-            dataset.put(key, value, function(err, record) {
-                if(err) reject(err); else resolve(record);
+        console.log("cognito3");
+        AWS.config.credentials.get(function() {
+            new AWS.CognitoSyncManager().openOrCreateDataset(datasetName, function(err, dataset) {
+                dataset.put(key, value, function(err, record) {
+                    if(err) reject(err); else resolve(record);
+                });
             });
         });
     });
@@ -37,16 +46,19 @@ function cognitoPut(datasetName, key, value) {
 }
 
 function cognitoRemove(datasetName, key) {
-    
+
     return new Promise(function(resolve, reject) {
-        new AWS.CognitoSyncManager().openOrCreateDataset(datasetName, function(err, dataset) {
-            dataset.remove(key, function(err, record) {
-                if(err) {
-                    reject(err); 
-                }
-                else {
-                    resolve(record);
-                }
+        console.log("cognito4");
+        AWS.config.credentials.get(function() {
+            new AWS.CognitoSyncManager().openOrCreateDataset(datasetName, function(err, dataset) {
+                dataset.remove(key, function(err, record) {
+                    if(err) {
+                        reject(err); 
+                    }
+                    else {
+                        resolve(record);
+                    }
+                });
             });
         });
     });

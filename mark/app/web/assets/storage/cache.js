@@ -20,7 +20,7 @@ Cache.cleanCache = function() {
     //refresh first load of site each day    
     if(Cache.get('version') != Date.currentDate()) 
     {
-        Cache.clear();
+        //Cache.clear(); this conflicts with cognito sync
         Cache.set('version', Date.currentDate());
     }
 }

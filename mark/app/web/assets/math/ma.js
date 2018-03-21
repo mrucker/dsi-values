@@ -134,7 +134,7 @@ ma.matrix = function(init) {
         return "matrix";
     }
     
-    this.size = function(dim) {
+    this.shape = function(dim) {
         var size = [init[0].length, init.length];
         
         if(dim == 0) return size[0];
@@ -204,7 +204,7 @@ ma.dl.vector = function(array) {
     //ma.dl.call(this, array.rankType ? array : dl.tensor2d(array, [array.length,1]));
     ma.dl.call(this, array.rankType ? array : dl.tensor2d(array, [array.length,1]));
     
-    this.size = function() {
+    this.shape = function() {
         return this.getTensor().shape;
     };
     
@@ -256,7 +256,7 @@ ma.dl.matrix = function(matrix) {
 
     ma.dl.call(this, matrix.rankType ? matrix : dl.tensor2d(matrix));
          
-    this.size = function(dim) {
+    this.shape = function(dim) {
 
         if(dim == 0) return this.getTensor().shape[0];
         if(dim == 1) return this.getTensor().shape[1];
@@ -297,7 +297,7 @@ ma.dl.matrix = function(matrix) {
     }
     
     this.col = function(index) {
-        return new ma.dl.vector(this.getTensor().slice([0,index],[this.size(0),1]));
+        return new ma.dl.vector(this.getTensor().slice([0,index],[this.shape(0),1]));
     }
     
     this.print = function() {

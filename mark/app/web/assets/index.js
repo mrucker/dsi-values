@@ -9,8 +9,9 @@ $(document).ready( function () {
     $('#main').append(loadingCSS());
 
     $('#signOut').on('click', onSignOut);
-    $('#dateSelector').on('change', loadMain);
-    $('#algorithmSelector').on('change', loadMain);
+    
+    $('#dateSelector').on('change', refreshMain);
+    $('#algorithmSelector').on('change', refreshRecommendations);
 });
 
 //Events
@@ -28,11 +29,17 @@ function gapiInit() {
 
 function onSignIn() {
     
-    amazonGoogleSignIn(googleSignIn());
+    amazonGoogleSignIn(googleSignIn()).then(History.sync).then(History.get).then(function(history) {
 
-    loadMain();
-    hideSplash();
-    showMain();
+        Cache.cleanCache();
+        Time .cleanCache(Date.currentDate(), history);
+        Movie.cleanCache(Time.getCache());
+    
+        refreshMain();
+        hideSplash();
+        showMain();
+
+    });
 }
 
 function onSignOut() {
@@ -75,85 +82,35 @@ function initMain() {
     getTheaters().then(function(theaters) { $('#main .theaters').append(theaters.map(theaterAsHTML)) });
 }
 
-function loadMain(skipTimes) {
+function refreshMain() {            
     
-    var getDate = function() {
-        return Promise.resolve({'date': getDateSelected()});
-    };
+    refreshingTimes();
+    refreshingRecommendations();
     
-    var getAlgorithm = function(data) {
+    return loadTimes().thenSleepFor(100).then(showTimes).then(loadRecommendations).then(showRecommendations);
+}
+//Main
+
+//Recommend
+function loadRecommendations() {
+    
+    var addAlgorithm = function(data) {
         data.algorithm = getAlgorithmSelected();
         return data;
-    };
-    
-    var sleepHalfSecond = function(data) {
-        return new Promise(function(resolve,reject) {
-            setTimeout(function(){ resolve(data); }, 100);
-        });
-    };
-    
-    var addHistory = function(data) {
-        return History.sync().then(History.get).then(function(history) { 
-            //not perfect, but put here to reduce the number of syncs required
-            Cache.cleanCache();
-            Time .cleanCache(Date.currentDate(), history);
-            Movie.cleanCache(Time.getCache());
-                        
-            data.history = history; return data; 
-        });
-    };
-    
-    var addTheaters = function(data) {
-        return getTheaters().then(function(theaters) { data.theaters = theaters; return data; });
-    };
-    
-    var addTimes = function(data) {
-        var dates      = data.history.map(function(h) { return h.date; }).concat([data.date]).filter(onlyUnique);
-        var theaterIds = data.theaters.map(function(t) { return t.id; });
-        
-        return Time.getCacheOrSource(dates, theaterIds).then(function(times) { data.times = times; return data; });
-    };
-    
-    var addMovies = function(data) {
-        return Movie.getCacheOrSource(data.times.map(function(t) { return t.movieId })).then(function(movies) { data.movies = movies; return data; });
-    };   
-        
-    var loadTimes = function(data) {
-        if(!skipTimes) { loadTheatersMoviesTimes(data.date, data.theaters, data.movies, data.times, data.history); } return data;
     };
     
     var addRecommendations = function(data) {
         return getRecommendations(data.algorithm, data.date, data.theaters, data.movies, data.times, data.history).then(function(recommendations) { data.recommendations = recommendations; return data; });
     };
     
-    var loadRecommend = function(data) {
-        loadRecommendations(data.date, data.recommendations, data.history); return data;
-    };
-        
-    if(!skipTimes) {
-        $('.theaters .movie').remove();
-        $('.theaters .loading').remove();
-        $('.theaters .theater').append(loadingHTML());
-    }
-
-    $('.recommendation').remove();
-    $('.recommendations .loading').remove();
-    $('.recommendations').append(loadingHTML());
-    
-    return getDate().then(getAlgorithm)
-                    .then(sleepHalfSecond)
-                    .then(addHistory)
-                    .then(addTheaters)
-                    .then(addTimes)
-                    .then(addMovies)
-                    .then(loadTimes)
-                    .then(addRecommendations)
-                    .then(loadRecommend);
+    return loadTimes().then(addAlgorithm).then(addRecommendations);
 }
-//Main
 
-//Recommend
-function loadRecommendations(date, recommendations, history) {
+function showRecommendations(data) {
+    
+    var date            = data.date;
+    var recommendations = data.recommendations;
+    var history         = data.history;
     
     var currentDate = Date.currentDate();
     var currentTime = Date.currentTime();
@@ -163,9 +120,23 @@ function loadRecommendations(date, recommendations, history) {
     $('.recommendations button').on('click', onRecommendationClick);
     
     history.filter(function(h) { return h.date == date }).forEach(function(h) { buttonQuery(h.theaterId, h.movieId, h.time).removeClass('o x').addClass('x'); });
+    
+    return data;
 }
 
-function recommendationAsHTML(recommendation) {
+function refreshRecommendations() {
+    refreshingRecommendations();
+    
+    Promise.resolve().thenSleepFor(100).then(loadRecommendations).then(showRecommendations);
+}
+
+function refreshingRecommendations() {
+    $('.recommendation').remove();
+    $('.recommendations .loading').remove();
+    $('.recommendations').append(loadingHTML());
+}
+
+function recommendationAsHTML(recommendation) {    
     return '<li class="recommendation">'+ buttonLarge(recommendation) + '</li>';
 }
 
@@ -174,8 +145,41 @@ function onRecommendationClick() {
 }
 //Recommend
 
-//List
-function loadTheatersMoviesTimes(date, theaters, movies, times, history) {
+//Times
+function loadTimes() {
+    var getDate = function() {
+        return Promise.resolve({'date': getDateSelected()});
+    };
+    
+    var addHistory = function(data) {
+        return History.get().then(function(history) { data.history = history; return data; });
+    };
+    
+    var addTheaters = function(data) {
+        return getTheaters().then(function(theaters) { data.theaters = theaters; return data; });
+    };
+    
+    var addTimes = function(data) {
+        var dates      = data.history.map(function(h) { return h.date; }).concat([data.date]).toDistinct();
+        var theaterIds = data.theaters.map(function(t) { return t.id; });
+        
+        return Time.getCacheOrSource(dates, theaterIds).then(function(times) { data.times = times; return data; });
+    };
+    
+    var addMovies = function(data) {
+        return Movie.getCacheOrSource(data.times.map(function(t) { return t.movieId })).then(function(movies) { data.movies = movies; return data; });
+    };
+    
+    return getDate().then(addHistory).then(addTheaters).then(addTimes).then(addMovies);
+}
+
+function showTimes(data) {
+    
+    var date     = data.date;
+    var theaters = data.theaters;
+    var movies   = data.movies;
+    var times    = data.times;
+    var history  = data.history;
     
     var currentDate = Date.currentDate();
     var currentTime = Date.currentTime();
@@ -193,6 +197,21 @@ function loadTheatersMoviesTimes(date, theaters, movies, times, history) {
     });
     
     history.filter(function(h) { return h.date == date }).forEach(function(h) { buttonQuery(h.theaterId, h.movieId, h.time).removeClass('o x').addClass('x'); })
+    
+    return data;
+}
+
+function refreshTimes() {
+    
+    refreshingTimes();    
+    
+    loadTimes().then(showTimes);
+}
+
+function refreshingTimes() {
+    $('.theaters .movie').remove();
+    $('.theaters .loading').remove();
+    $('.theaters .theater').append(loadingHTML());
 }
 
 function theaterAsHTML(theater) {
@@ -226,17 +245,11 @@ function onTimeClick() {
     var theaterId = $(this).data('theaterId');
     
     var buttons  = buttonQuery(theaterId, movieId, time);
-    var selected = buttons.attr('class') == 'x';
+    var selected = buttons.attr('class') == 'o';
+        
+    var updateHistory = selected ? History.put : History.rmv;
+    var toggleButtons = function() { buttons.toggleClass('x').toggleClass('o') };
     
-    if(selected) {
-        History.rmv(theaterId, movieId, getDateSelected(), time).then(History.sync).then(function() {
-            buttons.toggleClass('x').toggleClass('o');
-        }).then(function(){loadMain(true);});
-    }
-    else {
-        History.put(theaterId, movieId, getDateSelected(), time).then(History.sync).then(function() {
-            buttons.toggleClass('x').toggleClass('o');
-        }).then(function(){loadMain(true);});
-    }
+    updateHistory(theaterId, movieId, getDateSelected(), time).then(History.sync).then(toggleButtons).then(refreshRecommendations)    
 }
-//List
+//Times

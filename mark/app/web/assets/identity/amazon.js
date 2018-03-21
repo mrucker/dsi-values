@@ -33,12 +33,14 @@ function amazonSignIn(email, login) {
     });
     
     //See use case 17 in this readme (https://github.com/aws/aws-amplify/tree/master/packages/amazon-cognito-identity-js);
-    AWS.config.credentials.refresh((error) => {
-        if (error) {
-            console.error(error);
-        } else {
-            console.log('Successfully logged in!');
-        }
+    return new Promise(function(resolve, reject) {
+        AWS.config.credentials.refresh((error) => {
+            if (error) {
+                reject(error);
+            } else {
+                resolve();
+            }
+        });
     });
 }
 
@@ -52,5 +54,5 @@ function amazonGoogleSignIn(googleUser) {
     var email = googleUser.getBasicProfile().getEmail();
     var login = {'accounts.google.com': token };
     
-    amazonSignIn(email, login);
+    return amazonSignIn(email, login);
 }
