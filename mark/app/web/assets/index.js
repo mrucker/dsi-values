@@ -82,8 +82,8 @@ function initMain() {
     getTheaters().then(function(theaters) { $('#main .theaters').append(theaters.map(theaterAsHTML)) });
 }
 
-function refreshMain() {            
-    
+function refreshMain() {
+
     refreshingTimes();
     refreshingRecommendations();
     
@@ -93,16 +93,16 @@ function refreshMain() {
 
 //Recommend
 function loadRecommendations() {
-    
+
     var addAlgorithm = function(data) {
         data.algorithm = getAlgorithmSelected();
         return data;
     };
-    
+
     var addRecommendations = function(data) {
         return getRecommendations(data.algorithm, data.date, data.theaters, data.movies, data.times, data.history).then(function(recommendations) { data.recommendations = recommendations; return data; });
     };
-    
+
     return loadTimes().then(addAlgorithm).then(addRecommendations);
 }
 
@@ -112,11 +112,10 @@ function showRecommendations(data) {
     var recommendations = data.recommendations;
     var history         = data.history;
     
-    var currentDate = Date.currentDate();
-    var currentTime = Date.currentTime();
+    var currentDateTime = Date.currentDate()+Date.currentTime();
     
     $('.recommendations .loading').remove();
-    $('.recommendations').append(recommendations.filter(function(r) { return date > currentDate || r.time > currentTime || r.time == '' }).map(recommendationAsHTML));
+    $('.recommendations').append(recommendations.filter(function(r) { return r.time == '' || r.date+r.time > currentDateTime }).map(recommendationAsHTML));
     $('.recommendations button').on('click', onRecommendationClick);
     
     history.filter(function(h) { return h.date == date }).forEach(function(h) { buttonQuery(h.theaterId, h.movieId, h.time).removeClass('o x').addClass('x'); });
@@ -181,12 +180,11 @@ function showTimes(data) {
     var times    = data.times;
     var history  = data.history;
     
-    var currentDate = Date.currentDate();
-    var currentTime = Date.currentTime();
+    var currentDateTime = Date.currentDate()+Date.currentTime();
     
     theaters.forEach(function(theater) {
 
-        var theaterTimes  = times.filter(function(time) { return time.date == date && time.theaterId == theater.id && (time.date > currentDate || time.time >= currentTime) });
+        var theaterTimes  = times.filter(function(time) { return time.date == date && time.theaterId == theater.id && time.date+time.time > currentDateTime });
         var theaterMovies = movies.filter(onlyMoviesWithTimes(theaterTimes));
         var augmentMovies = theaterMovies.map(function(movie){ return Object.assign(movie,{ 'times': theaterTimes.filter(function(time) { return time.movieId == movie.id }) }); });
         var sortedMovies  = augmentMovies.sort(function(x,y) { return y.times.length - x.times.length; });                
