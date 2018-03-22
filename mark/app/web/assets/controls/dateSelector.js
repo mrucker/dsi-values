@@ -3,7 +3,7 @@ function getDateSelected() {
 }
 
 function getDateSelector() {
-    return '<input type="text" id="datepicker" style="width:68px;height:16.4px;border-width:0px">';
+    return '<input type="text" id="datepicker">';
 }
 
 function setDateSelector(callback) {

@@ -1,5 +1,14 @@
 function projectionRecommendation(date, theaters, movies, times, history, kernel) {
 
+    history = history.sort(function(h1,h2) {
+        var h1DateTime = h1.date+"-"+h1.time;
+        var h2DateTime = h2.date+"-"+h2.time;
+        
+        if(h1DateTime <  h2DateTime) return -1;
+        if(h1DateTime >  h2DateTime) return 1;
+        if(h1DateTime == h2DateTime) return 0;
+    });
+
     var movieRoot = movies.reduce(function(dict,movie) { dict[movie.id] = movie.rootId; return dict; }, {})
     var histDates = history.map(function(h) { return h.date; }).toDistinct();
 

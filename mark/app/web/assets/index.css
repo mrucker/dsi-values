@@ -52,8 +52,14 @@ body {
     color: #363636;
 }
 
-#toolbar  a.hover:hover {
+#toolbar a.hover:hover {
     color: #E5E5E5;
+}
+
+#toolbar #datepicker {
+    width       :69px;
+    height      :17.4px;
+    border-width:0px
 }
 
 #splash {
