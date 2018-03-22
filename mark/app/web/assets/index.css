@@ -1,3 +1,9 @@
+/*
+#242F40 BLUE
+#CCA43B ORANGE
+#E5E5E5 WHITE
+*/
+
 * {
     margin : 0; 
     padding: 0;
@@ -7,6 +13,14 @@
 body {
     background-color: #242F40;
     font-family: 'Open Sans'
+}
+
+.datepicker-today a {    
+    border: 1px solid #CCA43B !important;
+}
+
+.datepicker-history a {    
+    border: 1px solid #CCA43B !important;
 }
 
 #toolbar {

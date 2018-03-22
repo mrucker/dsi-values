@@ -14,21 +14,23 @@ let omdbCache = {};
  * Will succeed with the response body.
  */
 exports.handler = (event, context, callback) => {
+    //omdbCache = {};
     
-    getTmsData().then(tmsData => {
-        writeTmsMoviesData(tmsData);
-        writeTmsMoviesShowtimesData(tmsData);
-        writeTmsMoviesTheatersData(tmsData);
-    });
+    //getTmsDataFromDynamo().then(tmsData => {
+    getTmsDataFromWeb().then(tmsData => {
+         writeTmsMoviesData(tmsData);
+         writeTmsMoviesShowtimesData(tmsData);
+         writeTmsMoviesTheatersData(tmsData);
+     }).catch(console.log);
 };
 
 function writeTmsMoviesData(tmsMovies) {
     tmsMovies.forEach(tmsMovie => {
-                
-        getOmdbData(tmsMovie).then(omdbMovie => {
-            writeMovieData(cleanTmsMovie(tmsMovie), cleanOmdbMovie(omdbMovie));
-        });
+        console.log(tmsMovie.title);
         
+        getOmdbDataFromWeb(tmsMovie.title, tmsMovie.releaseYear, tmsMovie.subType).then(omdbMovie => {
+            writeMovieData(cleanTmsMovie(tmsMovie), cleanOmdbMovie(omdbMovie));
+        }).catch(console.log);
     });
 }
 
@@ -60,22 +62,26 @@ function writeTmsMoviesTheatersData(tmsMovies) {
 }
 
 function writeMovieData(tmsData, omdbData) {
+
     let params = 
     {
         Item: {
-            "Id"         : {"S" : tmsData.tmsId       },
-            "RootId"     : {"S" : tmsData.rootId      },
-            "Title"      : {"S" : tmsData.title       },
-            "ReleaseDate": {"S" : tmsData.releaseDate },
-            "Advisory"   : {"S" : tmsData.advisory    },
-            "Directors"  : {"SS": tmsData.directors   },
-            "Genres"     : {"SS": tmsData.genres      },
-            "TopCast"    : {"SS": tmsData.topCast     },
-            "Runtime"    : {"S" : omdbData.Runtime    },
-            "IMDbScore"  : {"S" : omdbData.imdbRating },
-            "MetaScore"  : {"S" : omdbData.Metascore  },
-            "RottenScore": {"S" : omdbData.RottenScore},
+            "Id"         : {"S" : tmsData.tmsId        || "NA"   },
+            "RootId"     : {"S" : tmsData.rootId       || "NA"   },
+            "Title"      : {"S" : tmsData.title        || "NA"   },
+            "Type"       : {"S" : tmsData.subType       || "NA"   },
 
+            "ReleaseDate": {"S" : tmsData.releaseDate  || omdbData.Released  || "NA" },
+            "Advisory"   : {"S" : tmsData.advisory     || omdbData.Rated     || "NA" },            
+            "Directors"  : {"SS": tmsData.directors    || omdbData.Directors || ["NA"] },
+            "Genres"     : {"SS": tmsData.genres       || omdbData.Genres    || ["NA"] },
+            "TopCast"    : {"SS": tmsData.topCast      || omdbData.Actors    || ["NA"] },
+
+            "ImdbId"     : {"S" : omdbData.imdbId      || "NA" },
+            "Runtime"    : {"S" : omdbData.Runtime     || "NA" },
+            "IMDbScore"  : {"S" : omdbData.imdbRating  || "NA" },
+            "MetaScore"  : {"S" : omdbData.Metascore   || "NA" },
+            "RottenScore": {"S" : omdbData.RottenScore || "NA" },
         },
         TableName          : "DSI_Movies",
         //ConditionExpression: "attribute_not_exists(Id)"
@@ -89,7 +95,7 @@ function writeMovieData(tmsData, omdbData) {
 }
 
 function writeMovieShowtimesData(id, list) {
-    
+
     let toDbList = (i) => {
         return { "M": {
                 "MovieId": {"S"   : i.movieId},
@@ -120,40 +126,58 @@ function writeMovieShowtimesData(id, list) {
 }
 
 function cleanTmsMovie(tmsData) {
-    tmsData.directors   = tmsData.directors   || ["NA"];
-    tmsData.genres      = tmsData.genres      || ["NA"];
-    tmsData.topCast     = tmsData.topCast     || ["NA"];
-    tmsData.releaseDate = tmsData.releaseDate || "NA";
-    tmsData.advisory    = tmsData.ratings ? tmsData.ratings[0].code : "NA" ;
+    tmsData.directors   = tmsData.directors   || undefined;
+    tmsData.genres      = tmsData.genres      || undefined;
+    tmsData.topCast     = tmsData.topCast     || undefined;
+    tmsData.releaseDate = tmsData.releaseDate || undefined;
+    tmsData.advisory    = tmsData.ratings ? tmsData.ratings[0].code : undefined;
+
+    tmsData.directors   = !isNa(tmsData.directors  ) ? tmsData.directors   : undefined;
+    tmsData.genres      = !isNa(tmsData.genres     ) ? tmsData.genres      : undefined;
+    tmsData.topCast     = !isNa(tmsData.topCast    ) ? tmsData.topCast     : undefined;
+    tmsData.releaseDate = !isNa(tmsData.releaseDate) ? tmsData.releaseDate : undefined;
+    tmsData.advisory    = !isNa(tmsData.advisory   ) ? tmsData.advisory    : undefined;
 
     return tmsData;
 }
 
 function cleanOmdbMovie(omdbData) {
     if(omdbData.Response == "True" ) {
-        omdbData.Rotten      = omdbData.Ratings ? omdbData.Ratings.find(r => r.Source == "Rotten Tomatoes") : undefined;
-        omdbData.RottenScore = omdbData.Rotten  ? omdbData.Rotten.Value.replace("%",""): "NA";
-        omdbData.Runtime     = omdbData.Runtime ? omdbData.Runtime.replace(" min", "") : "NA";
+        
+        omdbData.Rotten      = omdbData.Ratings  ? omdbData.Ratings.find(r => r.Source == "Rotten Tomatoes"): undefined;
+        omdbData.RottenScore = omdbData.Rotten   ? omdbData.Rotten.Value.replace("%","")                    : undefined;
+        omdbData.Runtime     = omdbData.Runtime  ? omdbData.Runtime.replace(" min", "")                     : undefined;
+        omdbData.imdbId      = omdbData.imdbID   ? omdbData.imdbID                                          : undefined;
+        omdbData.Genres      = omdbData.Genre    ? omdbData.Genre.split(",").map(s => s.trim())             : undefined;
+        omdbData.Actors      = omdbData.Actors   ? omdbData.Actors.split(",").map(s => s.trim()).slice(0,3) : undefined;
+        omdbData.Directors   = omdbData.Director ? omdbData.Director.split(",").map(s => s.trim())          : undefined;
+        omdbData.Released    = toDateString(omdbData.Released)
+        
+        omdbData.Rated       = !isNa(omdbData.Rated      ) ? omdbData.Rated       : undefined;
+        omdbData.imdbRating  = !isNa(omdbData.imdbRating ) ? omdbData.imdbRating  : undefined;
+        omdbData.Metascore   = !isNa(omdbData.Metascore  ) ? omdbData.Metascore   : undefined;
+        omdbData.RottenScore = !isNa(omdbData.RottenScore) ? omdbData.RottenScore : undefined;
+        omdbData.Runtime     = !isNa(omdbData.Runtime    ) ? omdbData.Runtime     : undefined;
+        omdbData.imdbId      = !isNa(omdbData.imdbId     ) ? omdbData.imdbId      : undefined;
+        omdbData.Released    = !isNa(omdbData.Released   ) ? omdbData.Released    : undefined;
+        omdbData.Genres      = !isNa(omdbData.Genres     ) ? omdbData.Genres      : undefined;
+        omdbData.Actors      = !isNa(omdbData.Actors     ) ? omdbData.Actors      : undefined;
+        omdbData.Directors   = !isNa(omdbData.Directors  ) ? omdbData.Directors   : undefined;
         
         return omdbData;
     }
     else {
-        return {
-            "imdbRating" : "NA",
-            "Metascore"  : "NA",
-            "RottenScore": "NA",
-            "Runtime"    : "NA",
-        };
+        return { };
     }
 }
 
-function getTmsData() {
+function getTmsDataFromWeb() {
     return new Promise((resolve, reject) => {
         
         const req = https.request(getTmsUrl(), res => {
             let body = '';
         
-            res.setEncoding('utf8');            
+            res.setEncoding('utf8');
             res.on('data', (chunk) => body += chunk);
             res.on('end', () => { resolve(JSON.parse(body)); });
         });
@@ -163,29 +187,78 @@ function getTmsData() {
     });
 }
 
-function getOmdbData(tmsMovie) {
+function getOmdbDataFromWeb(tmsTitle, tmsYear, tmsType) {
+    
+    tmsYear  = tmsYear >= 2000 ? tmsYear : undefined;
+    tmsTitle = tmsTitle.trim().toLowerCase().replace("  ", " ");
+    tmsTitle = tmsTitle.replace(": the imax 2d experience", "").replace(" -- an imax 3d experience", "").replace(" 3d", "");
+    
+    if(tmsTitle == "") {
+        return Promise.resolve({"Response":"False","Error":"Title was blank."});
+    }
+    
+    if(tmsType == "Theatre Event") {
+        return Promise.resolve({"Response":"False","Error":"Not a movie type."});
+    }
+    
     return new Promise((resolve, reject) => {
-        
-        var url = getOmdbUrl(tmsMovie.title, tmsMovie.releaseYear);
+
+        var url = getOmdbUrl(tmsTitle, tmsYear);
         
         if(omdbCache[url]) {
-            resolve(omdbCache[url]);
+            if(areSameTitle(tmsTitle, omdbCache[url].Title)){
+                resolve(clone(omdbCache[url]));
+            }
+            else { 
+                getOmdbDataFromWeb(removeLastWord(tmsTitle), tmsYear).then(resolve);
+            }
+
             return;
         }
-        
+
         const req = https.request(url, res => {
             let body = '';
-        
+
             res.setEncoding('utf8');
             res.on('data', (chunk) => body += chunk);
-            res.on('end', () => { 
+            res.on('end', () => {                 
+                
                 omdbCache[url] = JSON.parse(body);
-                resolve(omdbCache[url]);
+                
+                if(areSameTitle(tmsTitle, omdbCache[url].Title)){
+                    resolve(clone(omdbCache[url]));
+                }
+                else { 
+                    getOmdbDataFromWeb(removeLastWord(tmsTitle), tmsYear).then(resolve);
+                }
             });
         });
 
         req.on('error', reject);
         req.end();
+    });
+}
+
+function getTmsDataFromDynamo() {
+    return new Promise((resolve, reject) => {
+        dynamodb.scan({TableName:"DSI_Movies"}, (err,data) => {
+            
+            if(err) { reject(err); return; }
+            
+            resolve(data.Items.map(i => { 
+                return {
+                    "tmsId"      : i.Id.S,   
+                    "title"      : i.Title.S,
+                    "rootId"     : i.RootId      ? i.RootId.S              : undefined,
+                    "subType"    : i.Type        ? i.Type.S                : undefined,
+                    "releaseDate": i.ReleaseDate ? i.ReleaseDate.S         : undefined,
+                    "ratings"    : i.Advisory    ? [{"code":i.Advisory.S}] : undefined,
+                    "genres"     : i.Genres      ? i.Genres.SS             : undefined,
+                    "directors"  : i.Directors   ? i.Directors.SS          : undefined,
+                    "topCast"    : i.TopCast     ? i.TopCast.SS            : undefined,
+                };
+            }));
+        });
     });
 }
 
@@ -203,15 +276,15 @@ function getTmsUrl() {
     return `${domain}${path}${query}`;
 }
 
-function getOmdbUrl(tmsTitle, tmsReleaseYear) {
+function getOmdbUrl(tmsTitle, tmsYear) {
 
     //This assumes two things: tms follows their historical naming convention and the title of the movie doesn't have 3D in it.
     //Neither of these things are guaranteed, but looking through the history it looks like a small small fraction violate them.
-    let title   = encodeURIComponent(tmsTitle.replace(" 3D", "").replace(": The IMAX 2D Experience", ""));
+    let title   = encodeURIComponent(tmsTitle);
     let domain  = process.env.omdbApiDomain;
     let version = process.env.omdbApiVersion;
     let key     = process.env.omdbApiKey;
-    let year    = encodeURIComponent(tmsReleaseYear);
+    let year    = encodeURIComponent(tmsYear); //this may be undefined. That's ok. In that case year="undefined" and omdb ignores it.
 
     let path  = `/`;
     let query = `?apikey=${key}&type=movie&t=${title}&y=${year}&v=${version}`;
@@ -226,4 +299,29 @@ function getStartDate() {
     var year  = date.getUTCFullYear();
 
     return `${year}-${month}-${day}`;
+}
+
+function areSameTitle(title1, title2) {
+    
+    title1 = (title1 || "empty").toLowerCase();
+    title2 = (title2 || "empty").toLowerCase();
+    
+    return title1.split(" ").length == title2.split(" ").length;
+}
+
+function removeLastWord(string) {
+    return string.substring(0, string.lastIndexOf(" "));
+}
+
+function isNa(item) {
+    var naList = ["NA", "N/A"];
+    return naList.includes(item) || item && item.length == 1 && naList.includes(item[0]);
+}
+
+function clone(obj) {
+    return JSON.parse(JSON.stringify(obj));
+}
+
+function toDateString(dateString) {
+    return Date.parse(dateString) ? new Date(dateString).toISOString().substring(0,10) : undefined;
 }

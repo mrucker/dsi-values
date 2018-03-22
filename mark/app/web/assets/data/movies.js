@@ -37,7 +37,7 @@ Movie.getSource = function(movieIds) {
 }
 
 Movie.getCache = function(movieIds) {
-    return Cache.get('movies', []).filter(function(movie) { return movieIds == null || movieIds.includes(movie.id); });
+    return Cache.get('movies', []).filter(function(movie) { return movieIds == null || movieIds == movie.id || movieIds.includes(movie.id); });
 }
 
 Movie.setCache = function(movies) {

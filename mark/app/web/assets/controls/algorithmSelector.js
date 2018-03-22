@@ -10,3 +10,7 @@ function getAlgorithmSelector() {
          +    '<option value="2">Kernel Projection</option>'
          + '</select>';
 }
+
+function setAlgorithmSelector(callback) {
+    $('#algorithmSelector').on('change', callback);
+}

@@ -2,16 +2,11 @@ $(document).ready( function () {
     AWS.config.region = 'us-east-1';    
 
     initMain();
-    
     hideSplash();
     hideMain();
     
     $('#main').append(loadingCSS());
-
     $('#signOut').on('click', onSignOut);
-    
-    $('#dateSelector').on('change', refreshMain);
-    $('#algorithmSelector').on('change', refreshRecommendations);
 });
 
 //Events
@@ -80,6 +75,9 @@ function initMain() {
     $('#main').append('<h1>Showtimes</h1><div class="theaters"></div>')
     
     getTheaters().then(function(theaters) { $('#main .theaters').append(theaters.map(theaterAsHTML)) });
+    
+    setDateSelector(refreshMain);
+    setAlgorithmSelector(refreshRecommendations);
 }
 
 function refreshMain() {
@@ -87,7 +85,7 @@ function refreshMain() {
     refreshingTimes();
     refreshingRecommendations();
     
-    return loadTimes().thenSleepFor(100).then(showTimes).then(loadRecommendations).then(showRecommendations);
+    return loadTimes().thenSleepFor(100).then(showTimes).then(loadRecommendations).then(showRecommendations).then(updateDateSelectorHistory);
 }
 //Main
 
@@ -112,10 +110,8 @@ function showRecommendations(data) {
     var recommendations = data.recommendations;
     var history         = data.history;
     
-    var currentDateTime = Date.currentDate()+Date.currentTime();
-    
     $('.recommendations .loading').remove();
-    $('.recommendations').append(recommendations.filter(function(r) { return r.time == '' || r.date+r.time > currentDateTime }).map(recommendationAsHTML));
+    $('.recommendations').append(recommendations.filter(function(r) { return r.time == '' || r.date+r.time > oldestDateTimeToShow() }).map(recommendationAsHTML));
     $('.recommendations button').on('click', onRecommendationClick);
     
     history.filter(function(h) { return h.date == date }).forEach(function(h) { buttonQuery(h.theaterId, h.movieId, h.time).removeClass('o x').addClass('x'); });
@@ -180,11 +176,9 @@ function showTimes(data) {
     var times    = data.times;
     var history  = data.history;
     
-    var currentDateTime = Date.currentDate()+Date.currentTime();
-    
     theaters.forEach(function(theater) {
 
-        var theaterTimes  = times.filter(function(time) { return time.date == date && time.theaterId == theater.id && time.date+time.time > currentDateTime });
+        var theaterTimes  = times.filter(function(time) { return time.date == date && time.theaterId == theater.id && time.date+time.time > oldestDateTimeToShow() });
         var theaterMovies = movies.filter(onlyMoviesWithTimes(theaterTimes));
         var augmentMovies = theaterMovies.map(function(movie){ return Object.assign(movie,{ 'times': theaterTimes.filter(function(time) { return time.movieId == movie.id }) }); });
         var sortedMovies  = augmentMovies.sort(function(x,y) { return y.times.length - x.times.length; });                
@@ -248,6 +242,11 @@ function onTimeClick() {
     var updateHistory = selected ? History.put : History.rmv;
     var toggleButtons = function() { buttons.toggleClass('x').toggleClass('o') };
     
-    updateHistory(theaterId, movieId, getDateSelected(), time).then(History.sync).then(toggleButtons).then(refreshRecommendations)    
+    updateHistory(theaterId, movieId, getDateSelected(), time).then(History.sync).then(toggleButtons).then(updateDateSelectorHistory);
 }
 //Times
+
+function oldestDateTimeToShow() {
+    // return Date.currentDate()+Date.currentTime();
+    return "2000-02-0100:00";
+}
