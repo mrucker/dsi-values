@@ -71,13 +71,17 @@ function initMain() {
     $('#toolbar .left' ).html('<a href="https://dsi.markrucker.net" class="strong"> Ethical Recommendations </a> <span>' + getDateSelector() + '</span><span>' + getAlgorithmSelector() + '</span>');
     $('#toolbar .right').html('<a href="https://dsi.markrucker.net" class="hover" id="signOut">Sign out</a>');
     
-    $('#main').append('<h1>Recommendations</h1><ol class="recommendations"></ol>');
+    $('#main').append('<h1 style="display:inline">Recommendations</h1>' + getRefreshButton() + '<ol class="recommendations"></ol>');
     $('#main').append('<h1>Showtimes</h1><div class="theaters"></div>')
     
-    getTheaters().then(function(theaters) { $('#main .theaters').append(theaters.map(theaterAsHTML)) });
+    $('#main .theaters').append(Theater.getCache().map(theaterAsHTML));
+    
+    
     
     setDateSelector(refreshMain);
+    setRefreshButton(refreshRecommendations);
     setAlgorithmSelector(refreshRecommendations);
+    
 }
 
 function refreshMain() {
@@ -151,7 +155,7 @@ function loadTimes() {
     };
     
     var addTheaters = function(data) {
-        return getTheaters().then(function(theaters) { data.theaters = theaters; return data; });
+        return Theater.getCacheOrSource().then(function(theaters) { data.theaters = theaters; return data; });
     };
     
     var addTimes = function(data) {

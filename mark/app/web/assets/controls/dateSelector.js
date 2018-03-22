@@ -23,7 +23,7 @@ function updateDateSelectorHistory() {
             beforeShowDay: function(date) {
                 
                 var historyOnDate = history.filter(function(h) { return h.date == date.toMyDateString(); });
-                var moviesOnDate  = historyOnDate.map(function(h) { return Movie.getCache(h.movieId)[0].title; });
+                var moviesOnDate  = historyOnDate.map(function(h) { return movieTitle(h.movieId) + " ~ " + theaterName(h.theaterId) + " @" + h.time });
                 
                 var classes = [];
                 
@@ -38,10 +38,16 @@ function updateDateSelectorHistory() {
                 return [true, classes.join(" "), moviesOnDate.join("\r\n")];
             }
         });
-    });
-    
+    });    
 }
 
+function movieTitle(movieId) {
+    return Movie.getCache(movieId)[0].title
+}
+
+function theaterName(theaterId) {
+    return Theater.getCache(theaterId)[0].name;
+}
 
 function getDateSelectedOld() {
     return $('#dateSelector').val();

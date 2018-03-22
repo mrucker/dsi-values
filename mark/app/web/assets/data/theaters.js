@@ -1,6 +1,13 @@
-function getTheaters() {
+function Theater() {
+}
+
+Theater.getCacheOrSource = function(theaterIds) {
+    return Promise.resolve(Theater.getCache(theaterIds));
+}
+
+Theater.getCache = function(theaterIds) {
     
-    return Promise.resolve([
+    var theaters = [
         {
             'id'  : '11542',
             'name': 'Alamo Drafthouse Cinema',
@@ -21,6 +28,16 @@ function getTheaters() {
             'name': 'The Paramount Theater',
             'url' : 'https://www.theparamount.net/'
         }*/
-    ]);    
+    ];
+    
+    if(theaterIds && !theaterIds.includes) {
+        theaterIds = [theaterIds];
+    }
+    
+    if(theaterIds) {
+        theaterIds = theaterIds.map(String);
+    }
+    
+    return theaters.filter(function(t) { return theaterIds == null || theaterIds.includes(t.id)});
 }
 

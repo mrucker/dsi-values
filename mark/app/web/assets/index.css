@@ -16,7 +16,7 @@ body {
 }
 
 .datepicker-today a {    
-    border: 1px solid #CCA43B !important;
+    /*border: 1px solid #CCA43B !important;*/
 }
 
 .datepicker-history a {    
@@ -74,6 +74,10 @@ body {
 
 #main h1 {
     margin: 10px 0 0 0;
+}
+
+#main #recommend-refresh {
+        margin: 0px 0px 10px 10px
 }
 
 /*fonts*/

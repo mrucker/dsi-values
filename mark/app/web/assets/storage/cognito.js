@@ -19,11 +19,11 @@ function cognitoSync(datasetName) {
 function cognitoGet(datasetName) {
     return new Promise(function(resolve, reject) {        
         
-        console.log("cognitoGetting");
+        //console.log("cognitoGetting");
         AWS.config.credentials.get(function() {
             new AWS.CognitoSyncManager().openOrCreateDataset(datasetName, function(err, dataset) {
                 dataset.getAllRecords(function(err, records) {
-                    console.log("cognitoGot");
+                    //console.log("cognitoGot");
                     if(err) reject(err);                    
                     else resolve(records.filter(function(r) { return r.value != ''; }).map(function(r) { return JSON.parse(r.value); }));
                 });
@@ -35,7 +35,7 @@ function cognitoGet(datasetName) {
 function cognitoPut(datasetName, key, value) {
 
     return new Promise(function(resolve, reject) {
-        console.log("cognitoPutting");
+        //console.log("cognitoPutting");
         AWS.config.credentials.get(function() {
             new AWS.CognitoSyncManager().openOrCreateDataset(datasetName, function(err, dataset) {
                 dataset.put(key, value, function(err, record) {
@@ -50,7 +50,7 @@ function cognitoPut(datasetName, key, value) {
 function cognitoRemove(datasetName, key) {
 
     return new Promise(function(resolve, reject) {
-        console.log("cognitoRemoving");
+        //console.log("cognitoRemoving");
         AWS.config.credentials.get(function() {
             new AWS.CognitoSyncManager().openOrCreateDataset(datasetName, function(err, dataset) {
                 dataset.remove(key, function(err, record) {

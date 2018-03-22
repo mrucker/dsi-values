@@ -28,7 +28,7 @@ function projectionRecommendation(date, theaters, movies, times, history, kernel
     var states = [];
     var stateI = {};
 
-    var toStateVal = function(o) { return venueFeats[o.theaterId].concat(timeFeats[o.time]); };
+    var toStateVal = function(o) { return venueFeats[o.theaterId].concat(timeFeats[o.time]).concat(dateFeats[o.date]); };
     var toStateKey = function(o) { return JSON.stringify(toStateVal(o)) };
     
     allTimes.forEach(function(t) {
