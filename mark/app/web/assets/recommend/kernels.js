@@ -8,14 +8,15 @@ Kernel.dot = function(x) {
 }
 
 Kernel.gau = function(x) {
-    var dmat = Kernel.dmat(x);
+    var dmat = Kernel.dmat2(x);
     var sigm = new ma.dl.scalar(1);
     var neg  = new ma.dl.scalar(-1);
     
     return dmat.pow(2).div(sigm).mul(neg).exp();
 }
 
-Kernel.dmat = function(x) {
+//yuck, slow
+Kernel.dmat1 = function(x) {
     var dmat = Array(x.length).fill().map(function() { return []; });
 
     var vectors = x.map(function(s) {
@@ -30,6 +31,23 @@ Kernel.dmat = function(x) {
             dmat[j][i] = norm;
         }
     }
-    
+
     return new ma.dl.matrix(dmat);
+}
+
+Kernel.dmat2 = function(x) {
+    var dmat = Array(x.length).fill().map(function() { return []; });
+    
+    var matrix = new ma.dl.matrix(x);
+    
+    var norms = matrix.getTensor().norm('euclidean', 1).square().dataSync();
+    var trans = matrix.mul(matrix.trn());
+        
+    for(var i = 0; i < norms.length; i++) {
+        for(var j = i; j < norms.length; j++) {
+            dmat[j][i] = dmat[i][j] = norms[i] + norms[j];
+        }
+    }
+    
+    return (new ma.dl.matrix(dmat)).sub(trans.mul(new ma.dl.scalar(2))).sqrt();
 }

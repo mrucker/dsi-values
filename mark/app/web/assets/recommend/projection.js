@@ -20,15 +20,16 @@ function projectionRecommendation(date, theaters, movies, times, history, kernel
     
     var allTimeI = allTimes.reduce(function(dict, rt, i) { dict[key(rt)] = i; return dict;  }, {});
 
-    var venueFeats = venuesToFeatures(theaters);
-    var movieFeats = moviesToFeatures(movies, oldPicks);
-    var timeFeats  = timesToFeatures(allTimes);
-    var dateFeats  = datesToFeatures(allTimes);
+    var venueFeatures = venuesToFeatures(theaters);
+    var movieFeatures = moviesToFeatures(movies);
+    var timeFeatures  = timesToFeatures(allTimes);
+    var dateFeatures  = datesToFeatures(allTimes);
+    var histFeatures  = historyToFeatures(allTimes, oldPicks);
     
     var states = [];
     var stateI = {};
 
-    var toStateVal = function(o) { return venueFeats[o.theaterId].concat(timeFeats[o.time]).concat(dateFeats[o.date]); };
+    var toStateVal = function(o) { return venueFeatures[o.theaterId].concat(timeFeatures[o.time]).concat(dateFeatures[o.date]).concat(histFeatures[o.date+o.time+o.movieId]); };
     var toStateKey = function(o) { return JSON.stringify(toStateVal(o)) };
     
     allTimes.forEach(function(t) {
@@ -85,13 +86,14 @@ function projectionAlgorithm(states, structure, trajectory, choices, kernel) {
     
     var ff = kernel(states);
     
-    rs[1] = ff.mul(sE.sub(sb[0])).toArray();
+    //this is supposed to be ss[0]!!! See paragraph that begins "In the first iteration".
+    rs[1] = ff.mul(sE.sub(ss[0])).toArray();
     ss[1] = stateExpectation(rs[1], structure, discount);
     
     //ts[1] = sqrt(sE'*ff*sE + sb[0]'*ff*sb[0] - 2*sE'*ff*sb[0]);
     ts[1] = Math.sqrt(sE.trn().mul(ff).mul(sE).add(sb[0].trn().mul(ff).mul(sb[0])).sub(sE.trn().mul(ff).mul(sb[0]).mul(new scalar(2))).toNumber());
         
-    for(var i = 2; !(Math.abs(ts[i-1] - ts[i-2]) < epsilon); i++) {
+    for(var i = 2; !(Math.abs(ts[i-1] - ts[i-2]) < epsilon) && !(ts[i-1] < epsilon); i++) {
 
     //  Compute t and w using projection.
     //  sn      = (ss[i-1]-sb[i-2])'*ff*(sE-sb[i-2]);
@@ -114,16 +116,21 @@ function projectionAlgorithm(states, structure, trajectory, choices, kernel) {
         console.log('Completed IRL iteration, i=%d, t=%f\n',i, Math.abs(ts[i] - ts[i-1]));
         
         if(i == 100) break;
-    }
-
-    console.log("Expert: ", sE.toArray());
-    console.log("Learned: ", ss[i-1].toArray());
+    }   
     
     if(trajectory.length < 3) {
         return 'Please Select At Least Three Times To Receive a Recommendation'
     }
     
-    return choices.sort(function (a,b) { return rs[i-1][b.stateIndex] - rs[i-1][a.stateIndex] }).slice(0,5);
+    var bI = ss.map(s => s.sub(sE).norm(1).toNumber()).reduce((iMax, x, i, arr) => x < arr[iMax] ? i : iMax, 0);
+    var bE = ss[bI];
+    var bR = rs[bI];
+    
+    console.log("Expert: ", sE.toArray());
+    console.log("Learned: ", bE.toArray());
+    console.log("Difference: ", bE.sub(sE).toArray());
+    
+    return choices.sort(function (a,b) { return bR[b.stateIndex] - bR[a.stateIndex] }).slice(0,5);
 }
 
 function stateExpectation(rewards, structure, discount) {
@@ -157,36 +164,35 @@ function venuesToFeatures(theaters) {
 //3x[0,1]   for imdb/rotten/meta
 //1x[0,inf] for days old
 //1x[0,inf] for runtime
-function moviesToFeatures(movies, rootHistory) {
-    var pastRoots = rootHistory.map(function(h) { return h.rootId; }).toDistinct();
+function moviesToFeatures(movies) {
+
     var genres    = movies.map(function(m) { return m.genres;    }).toFlat().toDistinct();
     var actors    = movies.map(function(m) { return m.actors;    }).toFlat().toDistinct();
     var directors = movies.map(function(m) { return m.directors; }).toFlat().toDistinct();
     
-    var featuresByRootId = {}
+    var featuresByMovieId = {}
     
-    movies.forEach(function(m) {
-        var oneHotGenre    = genres   .map (function(gn) { return (m.genres.includes(gn)) ? 1 : 0 });
-        var oneHotActor    = actors   .map (function(at) { return (m.actors.includes(at)) ? 1 : 0 });
-        var oneHotDirector = directors.map (function(dt) { return (m.directors.includes(dt)) ? 1 : 0 });
-        var oneHotPast     = pastRoots.includes(m.rootId)? [1] : [0];
+    movies.forEach(function(m) { 
+        var oneHotGenre    = genres   .map (function(gn) { return (m.genres.includes(gn))    ? 1 : 0 });
+        var oneHotActor    = actors   .map (function(at) { return (m.actors.includes(at))    ? 1 : 0 });
+        var oneHotDirector = directors.map (function(dt) { return (m.directors.includes(dt)) ? 1 : 0 });        
         
-        var binaryFeatures = oneHotGenre.concat(oneHotActor).concat(oneHotDirector).concat(oneHotPast);
+        var binaryFeatures = oneHotGenre.concat(oneHotActor).concat(oneHotDirector);
         
-        var imdb0to1           = m.imdbScore/10;
-        var rotten0to1         = m.rottenScore/100;
-        var meta0to1           = m.metaScore/100;
-        var runtime            = m.runtime/60; //runhours
+        var imdb0to1   = m.imdbScore/10;
+        var rotten0to1 = m.rottenScore/100;
+        var meta0to1   = m.metaScore/100;
+        var runtime    = m.runtime/60; //runhours
         
-        //this seems to be causing problems. May add it back later.
+        //this seems to be causing problems. Consider adding it later after everything else works well.
         //var daysOld            = Date.daysBetween(new Date(m.releaseDate.replace("-","/")), new Date(Date.currentDate().replace("-","/")));
         
         var continuousFeatures = [imdb0to1, rotten0to1, meta0to1, runtime];
         
-        featuresByRootId[m.rootId] = binaryFeatures.concat(continuousFeatures);
+        featuresByMovieId[m.id] = binaryFeatures.concat(continuousFeatures);
     });
     
-    return featuresByRootId;
+    return featuresByMovieId;
 }
 
 //4x{0,1}   for morning/afternoon/evening/party
@@ -223,6 +229,30 @@ function datesToFeatures(times) {
     return featuresByDate;
 }
 
+function historyToFeatures(times, history) {
+    var oldMovies = history.map(function(t) { return Movie.getCache(t.movieId)[0];})
+    
+    var rootIdMatch = function(m1,m2) { return m1.rootId == m2.rootId && m1.rootId != "NA" };
+    var imdbIdMatch = function(m1,m2) { return m1.imdbId == m2.imdbId && m1.imdbId != "NA" };
+    var titleMatch  = function(m1,m2) { return m1.title == m2.title && m1.imdbId == "NA" && m1.rootId == "NA" };
+    var sameMovie   = function(m1,m2) { return rootIdMatch(m1,m2) || imdbIdMatch(m1,m2) || titleMatch(m1,m2) };    
+    
+    
+    var featuresByDateTimeMovieId = {};
+    
+    times.forEach(function(time) {
+        
+        var historyBeforeTime = history.filter(function(h) { return h.date+h.time < time.date+time.time });
+        var moviesBeforeTime  = historyBeforeTime.map(function(h) { return Movie.getCache(h.movieId)[0];});
+        var movie             = Movie.getCache(time.movieId)[0];
+        
+        var oneHotPast        = moviesBeforeTime.some(function(mbt) { return sameMovie(mbt,movie); }) ?[1]:[0];
+        
+        featuresByDateTimeMovieId[time.date+time.time+time.movieId] = oneHotPast;
+    });
+    
+    return featuresByDateTimeMovieId;
+}
 
 function key(rootTime) {
     return rootTime.date + rootTime.time + rootTime.theaterId + rootTime.rootId;

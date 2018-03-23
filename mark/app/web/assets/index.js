@@ -76,8 +76,6 @@ function initMain() {
     
     $('#main .theaters').append(Theater.getCache().map(theaterAsHTML));
     
-    
-    
     setDateSelector(refreshMain);
     setRefreshButton(refreshRecommendations);
     setAlgorithmSelector(refreshRecommendations);
@@ -126,7 +124,7 @@ function showRecommendations(data) {
 function refreshRecommendations() {
     refreshingRecommendations();
     
-    Promise.resolve().thenSleepFor(100).then(loadRecommendations).then(showRecommendations);
+    Promise.resolve().thenSleepFor(10).then(loadRecommendations).then(showRecommendations);
 }
 
 function refreshingRecommendations() {

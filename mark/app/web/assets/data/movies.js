@@ -20,6 +20,7 @@ Movie.getSource = function(movieIds) {
             return {
                 'id'         : item.Id.S,
                 'rootId'     : item.RootId.S,
+                'imdbId'     : item.ImdbId.S,
                 'title'      : item.Title.S,
                 'releaseDate': item.ReleaseDate.S,
                 'advisory'   : item.Advisory.S,
@@ -29,7 +30,7 @@ Movie.getSource = function(movieIds) {
                 'runtime'    : parseInt(item.Runtime.S),
                 'imdbScore'  : parseInt(item.IMDbScore.S),
                 'metaScore'  : parseInt(item.MetaScore.S),
-                'rottenScore': parseInt(item.RottenScore.S)
+                'rottenScore': parseInt(item.RottenScore.S)  
             };
         });
         return movies;

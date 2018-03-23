@@ -208,8 +208,8 @@ ma.dl.vector = function(array) {
         return this.getTensor().shape;
     };
     
-    this.norm = function() {
-        return new ma.dl.scalar(this.getTensor().norm());
+    this.norm = function(ord) {
+        return new ma.dl.scalar(this.getTensor().norm(ord));
     }
     
     this.trn = function() {
@@ -284,8 +284,20 @@ ma.dl.matrix = function(matrix) {
         return new ma.dl.matrix(thisTensor.matMul(thatTensor));
     };
     
+    this.add = function(that) {
+        return new ma.dl.matrix(this.getTensor().add(that.getTensor()))
+    }
+    
+    this.sub = function(that) {
+        return new ma.dl.matrix(this.getTensor().sub(that.getTensor()))
+    }
+    
     this.exp = function() {
         return new ma.dl.matrix(this.getTensor().exp());
+    }
+    
+    this.sqrt = function() {
+        return new ma.dl.matrix(this.getTensor().sqrt());
     }
     
     this.pow = function(exp) {
