@@ -1,22 +1,34 @@
 $(document).ready( function () {
-    AWS.config.region = 'us-east-1';    
-
-    initMain();
-    hideSplash();
-    hideMain();
+    AWS.config.region = 'us-east-1';
     
-    $('#main').append(loadingCSS());
-    $('#signOut').on('click', onSignOut);
+    $('head').append(loadingCSS());    
 });
 
 //Events
+function gapiLoad() {
+    //<!-- api.j       is google's core api that is able to load other js libraries async     -->
+    //<!-- client.js   is google's core api that connects their api's in a client application -->
+    //<!-- auth2.js    is google's OAuth API for authentication with google identity          -->
+    //<!-- platform.js is google's google+ API that we use only to render the signin button   -->
+
+    gapi.load('client:auth2', gapiInit);
+}
+
 function gapiInit() {
-    
-    gapi.auth2.init().then(function(googleAuth) {
-        if(googleAuth.currentUser.get().isSignedIn()) {
+            
+    gapi.auth2.init({
+        client_id   : '689948340204-prtmkdg63i0lrl6v4nn7vo9cd96chefq.apps.googleusercontent.com',
+        cookiepolicy: 'single_host_origin',
+        scope       : 'profile email'
+    }).then(function(googleAuth) {
+        if(googleAuth.currentUser.get().isSignedIn()) {            
+            initMain();
             showMain();
+            onSignIn();
         }
         else {
+            initMain();
+            initSplash();
             showSplash();
         }
     });
@@ -24,7 +36,7 @@ function gapiInit() {
 
 function onSignIn() {
     
-    amazonGoogleSignIn(googleSignIn()).then(History.sync).then(History.get).then(function(history) {
+    googleSignIn().then(amazonGoogleUserSignIn).then(History.sync).then(History.get).then(function(history) {
 
         Cache.cleanCache();
         Time .cleanCache(Date.currentDate(), history);
@@ -54,27 +66,39 @@ function showSplash() {
 function hideSplash() {
     $('#splash').css('display','none');
 }
+
+function initSplash() {
+    $('#splash').append('<h1>Ethical Recommendations</h1>');
+    $('#splash').append('<div id="signin"></div>');//render login button
+    
+    gapi.signin2.render('signin', {onsuccess: onSignIn});
+}
+
 //Splash
 
 //Main
 function showMain() {
-    $("#toolbar span").css('display','inline');
+    $("#toolbar").css('display','inline');
     $('#main').css('display','block');
 }
     
 function hideMain() {
-    $("#toolbar span").css('display','none');
+    $("#toolbar").css('display','none');
     $('#main').css('display','none');
 }
 
 function initMain() {
     $('#toolbar .left' ).html('<a href="https://dsi.markrucker.net" class="strong"> Ethical Recommendations </a> <span>' + getDateSelector() + '</span><span>' + getAlgorithmSelector() + '</span>');
-    $('#toolbar .right').html('<a href="https://dsi.markrucker.net" class="hover" id="signOut">Sign out</a>');
+    $('#toolbar .right').html('<a href="https://dsi.markrucker.net" class="hover" id="signout">Sign out</a>');
+    
+    $('#signout').on('click', onSignOut);
     
     $('#main').append('<h1 style="display:inline">Recommendations</h1>' + getRefreshButton() + '<ol class="recommendations"></ol>');
     $('#main').append('<h1>Showtimes</h1><div class="theaters"></div>')
     
     $('#main .theaters').append(Theater.getCache().map(theaterAsHTML));
+    
+    
     
     setDateSelector(refreshMain);
     setRefreshButton(refreshRecommendations);
@@ -183,7 +207,9 @@ function showTimes(data) {
         var theaterTimes  = times.filter(function(time) { return time.date == date && time.theaterId == theater.id && time.date+time.time > oldestDateTimeToShow() });
         var theaterMovies = movies.filter(onlyMoviesWithTimes(theaterTimes));
         var augmentMovies = theaterMovies.map(function(movie){ return Object.assign(movie,{ 'times': theaterTimes.filter(function(time) { return time.movieId == movie.id }) }); });
-        var sortedMovies  = augmentMovies.sort(function(x,y) { return y.times.length - x.times.length; });                
+        var sortedMovies  = augmentMovies.sort(function(x,y) {
+            return y.times.length - x.times.length != 0 ? y.times.length - x.times.length : x.title.compare(y.title); 
+        });                
 
         $('#' + theater.id + ' .loading').remove();
         $('#' + theater.id + ' .movies').append(sortedMovies.map(movieAsHTML).join(''));

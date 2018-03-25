@@ -1,5 +1,12 @@
+// https://developers.google.com/api-client-library/javascript/samples/samples#authorizing-and-making-authorized-requests
+
 function googleSignIn() {
-    return gapi.auth2.getAuthInstance().currentUser.get();
+    if(gapi.auth2.getAuthInstance().currentUser.get().isSignedIn()) {
+        return Promise.resolve(gapi.auth2.getAuthInstance().currentUser.get());
+    }
+    else {
+        return gapi.auth2.getAuthInstance().signIn();
+    }
 }
 
 function googleSignOut() {

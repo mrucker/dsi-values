@@ -1,12 +1,7 @@
 function projectionRecommendation(date, theaters, movies, times, history, kernel) {
 
     history = history.sort(function(h1,h2) {
-        var h1DateTime = h1.date+"-"+h1.time;
-        var h2DateTime = h2.date+"-"+h2.time;
-        
-        if(h1DateTime <  h2DateTime) return -1;
-        if(h1DateTime >  h2DateTime) return 1;
-        if(h1DateTime == h2DateTime) return 0;
+        return (h1.date+"-"+h1.time).compare(h2.date+"-"+h2.time);
     });
 
     var movieRoot = movies.reduce(function(dict,movie) { dict[movie.id] = movie.rootId; return dict; }, {})
@@ -122,7 +117,7 @@ function projectionAlgorithm(states, structure, trajectory, choices, kernel) {
         return 'Please Select At Least Three Times To Receive a Recommendation'
     }
     
-    var bI = ss.map(s => s.sub(sE).norm(1).toNumber()).reduce((iMax, x, i, arr) => x < arr[iMax] ? i : iMax, 0);
+    var bI = ss.map(function(s) { return s.sub(sE).norm(1).toNumber(); }).reduce(function(iMax, x, i, arr) { return x < arr[iMax] ? i : iMax; }, 0);
     var bE = ss[bI];
     var bR = rs[bI];
     

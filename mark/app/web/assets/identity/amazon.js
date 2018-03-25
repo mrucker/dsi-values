@@ -1,3 +1,11 @@
+function amazonGoogleUserSignIn(googleUser) {
+    var token = googleUser.getAuthResponse().id_token;
+    var email = googleUser.getBasicProfile().getEmail();
+    var login = {'accounts.google.com': token };
+    
+    return amazonSignIn(email, login);
+}
+
 function amazonSignIn(email, login) {
     AWS.config.credentials = new AWS.CognitoIdentityCredentials({ 
       // either IdentityPoolId or IdentityId is required
@@ -34,7 +42,7 @@ function amazonSignIn(email, login) {
     
     //See use case 17 in this readme (https://github.com/aws/aws-amplify/tree/master/packages/amazon-cognito-identity-js);
     return new Promise(function(resolve, reject) {
-        AWS.config.credentials.refresh((error) => {
+        AWS.config.credentials.refresh(function(error) {
             if (error) {
                 reject(error);
             } else {
@@ -47,12 +55,4 @@ function amazonSignIn(email, login) {
 function amazonSignOut() {
     new AWS.CognitoSyncManager().wipeData();
     AWS.config.credentials = null;
-}
-
-function amazonGoogleSignIn(googleUser) {
-    var token = googleUser.getAuthResponse().id_token;
-    var email = googleUser.getBasicProfile().getEmail();
-    var login = {'accounts.google.com': token };
-    
-    return amazonSignIn(email, login);
 }

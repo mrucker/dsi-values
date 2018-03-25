@@ -15,17 +15,13 @@ body {
     font-family: 'Open Sans'
 }
 
-.datepicker-today a {    
-    /*border: 1px solid #CCA43B !important;*/
+#main, #toolbar, #splah {
+    display: none; /*we initially all these elements and load them later in the js*/
 }
 
-.datepicker-history a {    
-    border: 1px solid #CCA43B !important;
-}
-
-#toolbar {
+#topbar {
     background-color: #CCA43B;
-    height          : 25px;
+    height          : 25px;    
 }
 
 #toolbar .left {
@@ -60,6 +56,14 @@ body {
     width       :69px;
     height      :17.4px;
     border-width:0px
+}
+
+.datepicker-today a {
+    /*border: 1px solid #CCA43B !important;*/
+}
+
+.datepicker-history a {    
+    border: 1px solid #CCA43B !important;
 }
 
 #splash {

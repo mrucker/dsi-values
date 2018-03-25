@@ -2,13 +2,12 @@ function getRandomRecommendations(date, times) {
     var seed = (date + AWS.config.credentials.params.LoginId).trim().toLowerCase();
     var rand = new Math.seedrandom(seed);
     
-    var reccTimes = times.filter(function(t) { return t.date == date;});
-    
-    var randomTimes = [];
+    var dateTimes = times.filter(function(t) { return t.date == date;});    
+    var randTimes = [];
 
     for(var i = 0; i < 5; i++) {
-        randomTimes.push(times[Math.floor(rand() * times.length)])
+        randTimes.push(dateTimes[Math.floor(rand() * dateTimes.length)])
     }
     
-    return Promise.resolve(randomTimes);
+    return Promise.resolve(randTimes);
 }
