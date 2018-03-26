@@ -15,11 +15,19 @@ function setAlgorithmSelector(callback) {
     $('#algorithmSelector').on('change', callback);
 }
 
-function updateAlgorithmSelector(data){
+function updateAlgorithmSelector(){
     
     Session.getAlgorithm().then(function(algorithm) {
         $('#algorithmSelector').val(algorithm);
+        updateAlgorithmSelectorMenu();
     });
+
+}
+
+function updateAlgorithmSelectorMenu() {
+    $('#RewardFeedback').remove();
     
-    return data;
+    if(getAlgorithmSelected() != 0) {
+        $('#toolbar .left' ).append('<button id="RewardFeedback"> Feedback </button>');
+    }
 }

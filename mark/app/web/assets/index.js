@@ -175,12 +175,6 @@ function showRecommendations(data) {
 
 function refreshRecommendations() {
     
-    $('#RewardFeedback').remove();
-    
-    if(getAlgorithmSelected() != 0) {
-        $('#toolbar .left' ).append('<button id="RewardFeedback"> Feedback </button>');
-    }
-    
     refreshingRecommendations();
     
     return Promise.resolve().thenSleepFor(10).then(loadRecommendations).then(showRecommendations);
@@ -193,6 +187,8 @@ function refreshingRecommendations() {
 }
 
 function changeRecommendationAlgorithm() {
+    
+    updateAlgorithmSelectorMenu();
     
     Session.setAlgorithm(getAlgorithmSelected()).then(Session.sync).then(refreshRecommendations);
 }
