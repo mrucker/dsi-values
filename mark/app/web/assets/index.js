@@ -1,7 +1,7 @@
 $(document).ready( function () {
     AWS.config.region = 'us-east-1';
     
-    $('head').append(loadingCSS());    
+    $('head').append(loadingCSS());
 });
 
 //Events
@@ -11,7 +11,15 @@ function gapiLoad() {
     //<!-- auth2.js    is google's OAuth API for authentication with google identity          -->
     //<!-- platform.js is google's google+ API that we use only to render the signin button   -->
 
-    gapi.load('client:auth2', gapiInit);
+    if(typeof(Promise) != "undefined") {
+        gapi.load('client:auth2', gapiInit);
+    } else {
+        var errorMsg = [
+            "Sorry, but we don't currently support your browser (or version).",
+            "Please update your browser (or switch to another) to use this site.", 
+        ];
+        showError(errorMsg);
+    }
 }
 
 function gapiInit() {
@@ -33,8 +41,11 @@ function gapiInit() {
             showSplash();
         }
     }).catch(function(e) {
-        initError();
-        showError();
+        var errorMsg = [
+            "Sorry, but it is not curretly possible to use our site without 3rd party cookies enabled.",
+            "If you'd like to use this site, you can re-enable 3rd party cookies and then refresh this page."
+        ];
+        showError(errorMsg);
     });
 }
 
@@ -128,18 +139,14 @@ function refreshMain() {
 //Main
 
 //Error
-function showError() {
+function showError(msgs) {
+    $('#error').append('<h1>Ethical Recommendations</h1>');
+    $('#error').append(msgs.map(function(m) { return "<h2>" + m + "</h2>";  }).join(" "));
     $('#error').css('display','block');
 }
 
 function hideError() {
     $('#error').css('display','none');
-}
-
-function initError() {
-    $('#error').append('<h1>Ethical Recommendations</h1>');
-    $('#error').append("<h2>Sorry, but it is not curretly possible to use our site without 3rd party cookies enabled.</h2>");
-    $('#error').append("<h2>If you'd like to use this site, you can may re-enable these and then refresh this page.</h2>");
 }
 //Error
 
