@@ -2,33 +2,10 @@ function History() {
 
 }
 
-History.sync = function() {
-    return cognitoSync('history'); //this costs $0.15 per 10,000
+History.obj = function(theaterId, movieId, date, time) {
+    return {'theaterId':theaterId, 'movieId':movieId, 'date':date, 'time':time};
 }
 
-History.put = function(theaterId, movieId, date, time) {
-
-    var key = History.key(theaterId, movieId, date, time);
-    var val = History.val(theaterId, movieId, date, time);
-
-    return cognitoPut('history', key, val);
-}
-
-History.rmv = function(theaterId, movieId, date, time) {
-
-    var key = History.key(theaterId, movieId, date, time);
-
-    return cognitoRemove('history', key);
-}
-
-History.get = function() {
-    return cognitoGet('history');
-}
-
-History.key = function(theaterId, movieId, date, time) {
-    return theaterId+movieId+date+time;
-}
-
-History.val = function(theaterId, movieId, date, time) {
-    return JSON.stringify({'theaterId':theaterId, 'movieId':movieId, 'date':date, 'time':time});
+History.areEqual = function(h1,h2) {
+    return h1.theaterId == h2.theaterId && h1.movieId == h2.movieId && h1.date == h2.date && h1.time == h2.time;
 }

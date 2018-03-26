@@ -9,15 +9,13 @@ Time.getCacheOrSource = function(dates, theaterIds) {
     if(notCachedDates.length == 0) 
         return Promise.resolve(oldCachedTimes);
     else
-        return Time.getSource(notCachedDates, theaterIds)
-                   .then(Time.setCache)
-                   .then(function(newCachedTimes) { return oldCachedTimes.concat(newCachedTimes); });
+        return Time.getSource(notCachedDates, theaterIds).then(Time.setCache).then(function(newCachedTimes) { return oldCachedTimes.concat(newCachedTimes); });
 }
 
 Time.getSource = function(dates, theaterIds) {
     var toDynamoKeys = function (theaterId) { return dates.map(function(date) { return {'Id' : {'S':date+theaterId } }; }); };
     
-    return dynamoBatchGet('DSI_Showtimes', theaterIds.filter(onlyUnique).map(toDynamoKeys).toFlat()).then(function(items) {
+    return dynamoBatchGet('DSI_Showtimes', theaterIds.toDistinct().map(toDynamoKeys).toFlat()).then(function(items) {
         
         var times = [];
         
@@ -49,12 +47,16 @@ Time.getCache = function(dates, theaterIds) {
 }
 
 Time.setCache = function(times) {
-    Cache.set('times', Time.getCache().concat(times).filter(onlyUniqueTimes()));
+    Cache.set('times', Time.getCache().concat(times).toDistinct(Time.areEqual));
     return times;
 }
 
 Time.cleanCache = function(date, history) {
     var historyDates = history.map(function(h) { return h.date; });
     
-    return Time.setCache(Time.getCache().filter(onlyUniqueTimes()).filter(function(time) { return time.date >= date || historyDates.includes(time.date) }));
+    return Time.setCache(Time.getCache().toDistinct(Time.areEqual).filter(function(time) { return time.date >= date || historyDates.includes(time.date) }));
+}
+
+Time.areEqual = function(t1, t2) {
+    return t1.theaterId == t2.theaterId && t1.movieId == t2.movieId && t1.time == t2.time && t1.date == t2.date
 }

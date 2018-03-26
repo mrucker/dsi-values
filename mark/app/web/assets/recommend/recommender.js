@@ -3,7 +3,7 @@ function getRecommendations(algorithm, date, theaters, movies, times, history) {
     var timesToReccObject = function(times) { 
         
         if(typeof(times) == "string") {
-            return [{ 'movie'  : '', 'theater': times, 'time'   : '' }]; 
+            return [{ 'message': times, 'movie'  : '', 'theater': '', 'time'   : '' }]; 
         }
         
         return times.map(function(time) {

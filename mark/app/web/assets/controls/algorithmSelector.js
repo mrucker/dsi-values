@@ -14,3 +14,12 @@ function getAlgorithmSelector() {
 function setAlgorithmSelector(callback) {
     $('#algorithmSelector').on('change', callback);
 }
+
+function updateAlgorithmSelector(data){
+    
+    Session.getAlgorithm().then(function(algorithm) {
+        $('#algorithmSelector').val(algorithm);
+    });
+    
+    return data;
+}

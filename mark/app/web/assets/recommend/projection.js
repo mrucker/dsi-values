@@ -114,7 +114,7 @@ function projectionAlgorithm(states, structure, trajectory, choices, kernel) {
     }   
     
     if(trajectory.length < 3) {
-        return 'Please Select At Least Three Times To Receive a Recommendation'
+        return 'Please select at least three times to receive a recommendation'
     }
     
     var bI = ss.map(function(s) { return s.sub(sE).norm(1).toNumber(); }).reduce(function(iMax, x, i, arr) { return x < arr[iMax] ? i : iMax; }, 0);

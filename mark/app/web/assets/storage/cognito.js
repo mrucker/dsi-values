@@ -16,16 +16,27 @@ function cognitoSync(datasetName) {
     });
 }
 
-function cognitoGet(datasetName) {
-    return new Promise(function(resolve, reject) {        
-        
-        //console.log("cognitoGetting");
+function cognitoGetAll(datasetName) {
+    
+    return new Promise(function(resolve, reject) {
         AWS.config.credentials.get(function() {
             new AWS.CognitoSyncManager().openOrCreateDataset(datasetName, function(err, dataset) {
                 dataset.getAllRecords(function(err, records) {
-                    //console.log("cognitoGot");
                     if(err) reject(err);                    
                     else resolve(records.filter(function(r) { return r.value != ''; }).map(function(r) { return JSON.parse(r.value); }));
+                });
+            });
+        });
+    });
+}
+
+function cognitoGetKey(datasetName, key) {
+    
+    return new Promise(function(resolve, reject) {
+        AWS.config.credentials.get(function() {
+            new AWS.CognitoSyncManager().openOrCreateDataset(datasetName, function(err, dataset) {
+                dataset.get(key, function(err, value) {
+                    if(err) reject(err); else resolve(value);
                 });
             });
         });
@@ -35,7 +46,6 @@ function cognitoGet(datasetName) {
 function cognitoPut(datasetName, key, value) {
 
     return new Promise(function(resolve, reject) {
-        //console.log("cognitoPutting");
         AWS.config.credentials.get(function() {
             new AWS.CognitoSyncManager().openOrCreateDataset(datasetName, function(err, dataset) {
                 dataset.put(key, value, function(err, record) {
@@ -50,16 +60,10 @@ function cognitoPut(datasetName, key, value) {
 function cognitoRemove(datasetName, key) {
 
     return new Promise(function(resolve, reject) {
-        //console.log("cognitoRemoving");
         AWS.config.credentials.get(function() {
             new AWS.CognitoSyncManager().openOrCreateDataset(datasetName, function(err, dataset) {
                 dataset.remove(key, function(err, record) {
-                    if(err) {
-                        reject(err); 
-                    }
-                    else {
-                        resolve(record);
-                    }
+                    if(err) reject(err); else resolve(record);
                 });
             });
         });

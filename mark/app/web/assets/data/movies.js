@@ -6,7 +6,7 @@ Movie.getCacheOrSource = function(movieIds) {
     
     var cachedMovies = Movie.getCache(movieIds);
     
-    if(cachedMovies.length == movieIds.filter(onlyUnique).length) 
+    if(cachedMovies.length == movieIds.toDistinct().length) 
         return Promise.resolve(cachedMovies);
     else
         return Movie.getSource(movieIds).then(Movie.setCache);    
@@ -15,7 +15,7 @@ Movie.getCacheOrSource = function(movieIds) {
 Movie.getSource = function(movieIds) {
     var toDynamoKeys = function(movieId) { return {'Id' : {'S':movieId } }; };
     
-    return dynamoBatchGet('DSI_Movies', movieIds.filter(onlyUnique).map(toDynamoKeys)).then(function(items) {
+    return dynamoBatchGet('DSI_Movies', movieIds.toDistinct().map(toDynamoKeys)).then(function(items) {
         var movies = items.filter(function(item) { return item; }).map(function(item) {
             return {
                 'id'         : item.Id.S,
@@ -42,10 +42,10 @@ Movie.getCache = function(movieIds) {
 }
 
 Movie.setCache = function(movies) {
-    Cache.set('movies', Movie.getCache().concat(movies).filter(onlyUniqueMovies())); 
+    Cache.set('movies', Movie.getCache().concat(movies).toDistinct(m => m.id)); 
     return movies;
 }
 
 Movie.cleanCache = function(times) {
-    return Movie.setCache(Movie.getCache().filter(onlyUniqueMovies()).filter(onlyMoviesWithTimes(times)));
+    return Movie.setCache(Movie.getCache().toDistinct(m => m.id).filter(onlyMoviesWithTimes(times)));
 }

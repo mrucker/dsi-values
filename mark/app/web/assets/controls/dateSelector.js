@@ -17,7 +17,7 @@ function setDateSelector(callback) {
 
 function updateDateSelectorHistory() {
     
-    History.get().then(function(history) {
+    Session.getHistory().then(function(history) {
         
         $('#datepicker').datepicker("option", {
             beforeShowDay: function(date) {
@@ -42,7 +42,8 @@ function updateDateSelectorHistory() {
 }
 
 function movieTitle(movieId) {
-    return Movie.getCache(movieId)[0].title
+    var movie = Movie.getCache(movieId)[0];
+    return movie ? movie.title : "unknown";
 }
 
 function theaterName(theaterId) {

@@ -37,6 +37,10 @@ Date.currentTime = function() {
     return new Date().toMyTimeString();
 }
 
+Date.currentDateTime = function() {       
+    return Date.currentDate() + "-" + Date.currentTime();
+}
+
 Date.daysBetween = function(date1, date2 ) {   
     var one_day_ms    = 1000*60*60*24;
     var date1_ms      = date1.getTime();

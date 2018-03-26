@@ -16,10 +16,12 @@ function gapiLoad() {
 
 function gapiInit() {
             
-    gapi.auth2.init({
-        client_id   : '689948340204-prtmkdg63i0lrl6v4nn7vo9cd96chefq.apps.googleusercontent.com',
-        cookiepolicy: 'single_host_origin',
-        scope       : 'profile email'
+    gapi.auth2.init({ 
+        /* https://developers.google.com/api-client-library/javascript/reference/referencedocs#gapiauth2clientconfig */
+        client_id     : '689948340204-prtmkdg63i0lrl6v4nn7vo9cd96chefq.apps.googleusercontent.com',    
+        scope         : 'profile email',
+        //cookie_policy : 'none',    //neither of these settings have any impact on the 3rd party cookie problem
+        //ux_mode       : 'redirect' //neither of these settings have any impact on the 3rd party cookie problem
     }).then(function(googleAuth) {
         if(googleAuth.currentUser.get().isSignedIn()) {            
             initMain();
@@ -31,17 +33,23 @@ function gapiInit() {
             initSplash();
             showSplash();
         }
+    }).catch(function(e) {
+        initError();
+        showError();
     });
 }
 
 function onSignIn() {
     
-    googleSignIn().then(amazonGoogleUserSignIn).then(History.sync).then(History.get).then(function(history) {
+    googleSignIn().then(amazonGoogleUserSignIn).then(Session.sync).then(Session.getHistory).then(function(history) {
 
         Cache.cleanCache();
         Time .cleanCache(Date.currentDate(), history);
         Movie.cleanCache(Time.getCache());
-    
+
+        updateAlgorithmSelector();
+        updateDateSelectorHistory();
+
         refreshMain();
         hideSplash();
         showMain();
@@ -69,41 +77,44 @@ function hideSplash() {
 
 function initSplash() {
     $('#splash').append('<h1>Ethical Recommendations</h1>');
-    $('#splash').append('<div id="signin"></div>');//render login button
+    $('#splash').append('<div id="signin"></div>');
     
     gapi.signin2.render('signin', {onsuccess: onSignIn});
 }
-
 //Splash
 
 //Main
 function showMain() {
-    $("#toolbar").css('display','inline');
+    $("#toolbar .content").css('display','inline');
     $('#main').css('display','block');
 }
     
 function hideMain() {
-    $("#toolbar").css('display','none');
+    $("#toolbar .content").css('display','none');
     $('#main').css('display','none');
 }
 
 function initMain() {
-    $('#toolbar .left' ).html('<a href="https://dsi.markrucker.net" class="strong"> Ethical Recommendations </a> <span>' + getDateSelector() + '</span><span>' + getAlgorithmSelector() + '</span>');
-    $('#toolbar .right').html('<a href="https://dsi.markrucker.net" class="hover" id="signout">Sign out</a>');
+    
+    $('#toolbar .left' ).append('<a href="https://dsi.markrucker.net" class="strong"> Ethical Recommendations </a>');
+    $('#toolbar .left' ).append('<span>' + getDateSelector() + '</span>');
+    $('#toolbar .left' ).append('<span>' + getAlgorithmSelector() + '</span>');
+    $('#toolbar .right').append('<a href="https://dsi.markrucker.net" class="hover" id="signout">Sign out</a>');
     
     $('#signout').on('click', onSignOut);
     
-    $('#main').append('<h1 style="display:inline">Recommendations</h1>' + getRefreshButton() + '<ol class="recommendations"></ol>');
-    $('#main').append('<h1>Showtimes</h1><div class="theaters"></div>')
+    $('#main').append('<h1 style="display:inline">Recommendations</h1>');
+    $('#main').append('<span>' + getRefreshButton() + '</span>');
+    $('#main').append('<ol class="recommendations"></ol>');
+    
+    $('#main').append('<h1>Showtimes</h1>')
+    $('#main').append('<div class="theaters"></div>')
     
     $('#main .theaters').append(Theater.getCache().map(theaterAsHTML));
     
-    
-    
     setDateSelector(refreshMain);
     setRefreshButton(refreshRecommendations);
-    setAlgorithmSelector(refreshRecommendations);
-    
+    setAlgorithmSelector(changeRecommendationAlgorithm);
 }
 
 function refreshMain() {
@@ -111,9 +122,25 @@ function refreshMain() {
     refreshingTimes();
     refreshingRecommendations();
     
-    return loadTimes().thenSleepFor(100).then(showTimes).then(loadRecommendations).then(showRecommendations).then(updateDateSelectorHistory);
+    return loadTimes().thenSleepFor(100).then(showTimes).thenSleepFor(0).then(loadRecommendations).then(showRecommendations);
 }
 //Main
+
+//Error
+function showError() {
+    $('#error').css('display','block');
+}
+
+function hideError() {
+    $('#error').css('display','none');
+}
+
+function initError() {
+    $('#error').append('<h1>Ethical Recommendations</h1>');
+    $('#error').append("<h2>Sorry, but it is not curretly possible to use our site without 3rd party cookies enabled.</h2>");
+    $('#error').append("<h2>If you'd like to use this site, you can may re-enable these and then refresh this page.</h2>");
+}
+//Error
 
 //Recommend
 function loadRecommendations() {
@@ -146,6 +173,7 @@ function showRecommendations(data) {
 }
 
 function refreshRecommendations() {
+    
     refreshingRecommendations();
     
     Promise.resolve().thenSleepFor(10).then(loadRecommendations).then(showRecommendations);
@@ -157,8 +185,24 @@ function refreshingRecommendations() {
     $('.recommendations').append(loadingHTML());
 }
 
+function changeRecommendationAlgorithm() {
+    
+    $('#RewardFeedback').remove();
+    
+    if(getAlgorithmSelected() != 0) {
+        $('#toolbar .left' ).append('<button id="RewardFeedback"> Feedback </button>');
+    }
+    
+    Session.setAlgorithm(getAlgorithmSelected()).then(Session.sync).then(refreshRecommendations);
+}
+
 function recommendationAsHTML(recommendation) {    
-    return '<li class="recommendation">'+ buttonLarge(recommendation) + '</li>';
+    if(recommendation.message) {
+        return "<div class='recommendation'>" + recommendation.message + "</div>";
+    }
+    else {
+        return "<li class='recommendation'>"+ buttonLarge(recommendation) + '</li>';
+    }
 }
 
 function onRecommendationClick() {
@@ -173,7 +217,7 @@ function loadTimes() {
     };
     
     var addHistory = function(data) {
-        return History.get().then(function(history) { data.history = history; return data; });
+        return Session.getHistory().then(function(history) { data.history = history; return data; });
     };
     
     var addTheaters = function(data) {
@@ -260,17 +304,22 @@ function timeAsHTML(time) {
 }
 
 function onTimeClick() {
-    var time      = $(this).data('time')
+    var date      = getDateSelected();
+    var time      = $(this).data('time')    
     var movieId   = $(this).data('movieId');
-    var theaterId = $(this).data('theaterId');
+    var theaterId = $(this).data('theaterId');    
+    var isFuture  = date + "-" + time > Date.currentDateTime();
+    
     
     var buttons  = buttonQuery(theaterId, movieId, time);
     var selected = buttons.attr('class') == 'o';
-        
-    var updateHistory = selected ? History.put : History.rmv;
+
+    var updateHistory = selected ? Session.addHistory : Session.rmvHistory;
     var toggleButtons = function() { buttons.toggleClass('x').toggleClass('o') };
     
-    updateHistory(theaterId, movieId, getDateSelected(), time).then(History.sync).then(toggleButtons).then(updateDateSelectorHistory);
+    var updateGladTimes = (selected && isFuture) ? Session.addGladTimes : Session.rmvGladTimes;    
+        
+    updateGladTimes(date, time).then(updateHistory(theaterId, movieId, date, time)).then(Session.sync).then(toggleButtons).then(updateDateSelectorHistory);
 }
 //Times
 

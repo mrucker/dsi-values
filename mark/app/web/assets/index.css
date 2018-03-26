@@ -15,11 +15,11 @@ body {
     font-family: 'Open Sans'
 }
 
-#main, #toolbar, #splah {
+#main, #toolbar .content, #splah, #error {
     display: none; /*we initially all these elements and load them later in the js*/
 }
 
-#topbar {
+#toolbar {
     background-color: #CCA43B;
     height          : 25px;    
 }
@@ -69,6 +69,15 @@ body {
 #splash {
     margin: 50px 0 0 50px;
     color: #E5E5E5;
+}
+
+#error {
+    margin: 50px 0 0 50px;
+    color: #E5E5E5;
+}
+
+#error h2 {
+    color: #b30000;
 }
 
 #main {    
