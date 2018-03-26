@@ -25,7 +25,6 @@ function gapiInit() {
     }).then(function(googleAuth) {
         if(googleAuth.currentUser.get().isSignedIn()) {            
             initMain();
-            showMain();
             onSignIn();
         }
         else {
@@ -47,7 +46,7 @@ function onSignIn() {
         Time .cleanCache(Date.currentDate(), history);
         Movie.cleanCache(Time.getCache());
 
-        updateAlgorithmSelector();
+        updateAlgorithmSelector();        
         updateDateSelectorHistory();
 
         refreshMain();
@@ -119,10 +118,12 @@ function initMain() {
 
 function refreshMain() {
 
-    refreshingTimes();
-    refreshingRecommendations();
+    //refreshingTimes();
+    //refreshingRecommendations();
     
-    return loadTimes().thenSleepFor(100).then(showTimes).thenSleepFor(0).then(loadRecommendations).then(showRecommendations);
+    return refreshTimes().then(refreshRecommendations);
+    
+    //return loadTimes().thenSleepFor(100).then(showTimes).thenSleepFor(0).then(loadRecommendations).then(showRecommendations);
 }
 //Main
 
@@ -174,9 +175,15 @@ function showRecommendations(data) {
 
 function refreshRecommendations() {
     
+    $('#RewardFeedback').remove();
+    
+    if(getAlgorithmSelected() != 0) {
+        $('#toolbar .left' ).append('<button id="RewardFeedback"> Feedback </button>');
+    }
+    
     refreshingRecommendations();
     
-    Promise.resolve().thenSleepFor(10).then(loadRecommendations).then(showRecommendations);
+    return Promise.resolve().thenSleepFor(10).then(loadRecommendations).then(showRecommendations);
 }
 
 function refreshingRecommendations() {
@@ -186,12 +193,6 @@ function refreshingRecommendations() {
 }
 
 function changeRecommendationAlgorithm() {
-    
-    $('#RewardFeedback').remove();
-    
-    if(getAlgorithmSelected() != 0) {
-        $('#toolbar .left' ).append('<button id="RewardFeedback"> Feedback </button>');
-    }
     
     Session.setAlgorithm(getAlgorithmSelected()).then(Session.sync).then(refreshRecommendations);
 }
@@ -235,7 +236,7 @@ function loadTimes() {
         return Movie.getCacheOrSource(data.times.map(function(t) { return t.movieId })).then(function(movies) { data.movies = movies; return data; });
     };
     
-    return getDate().then(addHistory).then(addTheaters).then(addTimes).then(addMovies);
+    return Promise.resolve().thenSleepFor(10).then(getDate).then(addHistory).then(addTheaters).then(addTimes).then(addMovies);
 }
 
 function showTimes(data) {
@@ -269,7 +270,7 @@ function refreshTimes() {
     
     refreshingTimes();    
     
-    loadTimes().then(showTimes);
+    return loadTimes().then(showTimes);
 }
 
 function refreshingTimes() {
