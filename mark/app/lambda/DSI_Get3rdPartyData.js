@@ -18,9 +18,9 @@ exports.handler = (event, context, callback) => {
     
     //getTmsDataFromDynamo().then(tmsData => {
     getTmsDataFromWeb().then(tmsData => {
-         writeTmsMoviesData(tmsData);
+         //writeTmsMoviesData(tmsData);
          writeTmsMoviesShowtimesData(tmsData);
-         writeTmsMoviesTheatersData(tmsData);
+         //writeTmsMoviesTheatersData(tmsData);
      }).catch(console.log);
 };
 
@@ -53,7 +53,7 @@ function writeTmsMoviesShowtimesData(tmsMovies) {
     
     let moviesShowtimes = tmsMovies.map(toMovieShowtimes).reduce(toFlat,[]).reduce(toGroup,{});
     
-    Object.keys(moviesShowtimes).forEach(k => { /*console.log("key: ", k);*/ writeMovieShowtimesData(k, moviesShowtimes[k]); });
+    Object.keys(moviesShowtimes).forEach(k => { writeMovieShowtimesData(k, moviesShowtimes[k]); });
 }
 
 function writeTmsMoviesTheatersData(tmsMovies) {
@@ -116,6 +116,12 @@ function writeMovieShowtimesData(id, list) {
         TableName          : "DSI_Showtimes",
         //ConditionExpression: "attribute_not_exists(Id)"
     };
+    
+    //console.log(JSON.stringify(id));
+    //theaters:
+    //  11542 -- Alamo 
+    //  11237 -- Violet
+    //  10657 -- Regal
     
     dynamodb.putItem(params, function(err,data) { 
         if(err && err.code != "ConditionalCheckFailedException") {

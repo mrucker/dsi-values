@@ -227,9 +227,9 @@ function datesToFeatures(times) {
 function historyToFeatures(times, history) {
     var oldMovies = history.map(function(t) { return Movie.getCache(t.movieId)[0];})
     
-    var rootIdMatch = function(m1,m2) { return m1.rootId == m2.rootId && m1.rootId != "NA" };
-    var imdbIdMatch = function(m1,m2) { return m1.imdbId == m2.imdbId && m1.imdbId != "NA" };
-    var titleMatch  = function(m1,m2) { return m1.title == m2.title && m1.imdbId == "NA" && m1.rootId == "NA" };
+    var rootIdMatch = function(m1,m2) { return m1 && m2 && m1.rootId == m2.rootId && m1.rootId != "NA" };
+    var imdbIdMatch = function(m1,m2) { return m1 && m2 && m1.imdbId == m2.imdbId && m1.imdbId != "NA" };
+    var titleMatch  = function(m1,m2) { return m1 && m2 && m1.title  == m2.title  && m1.imdbId == "NA" && m1.rootId == "NA" };
     var sameMovie   = function(m1,m2) { return rootIdMatch(m1,m2) || imdbIdMatch(m1,m2) || titleMatch(m1,m2) };    
     
     

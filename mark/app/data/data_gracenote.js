@@ -2,7 +2,7 @@
 
 function Gracenote() {
     
-    var apiKey     = 'e3rbxbs6mjp8mhk9wfz8e6gv';
+    var apiKey     = '';
     var baseURI    = 'https://data.tmsapi.com';
     var apiVersion = '1.1'
     

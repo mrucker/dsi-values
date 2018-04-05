@@ -18,6 +18,10 @@ function getRecommendations(algorithm, date, theaters, movies, times, history) {
         });
     };
     
+    //remove times without movie data so that we don't recommend them.
+    times = times.filter(t => t && movies.some(m => m.id == t.movieId));
+    
+    
     if(algorithm == 0) {
         return getRandomRecommendations(date, times).then(timesToReccObject);
     }

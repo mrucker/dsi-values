@@ -1,5 +1,5 @@
 documentation: http://www.omdbapi.com/
-example query: http://www.omdbapi.com/?apikey=8bfc6431&i=tt3896198
+example query: http://www.omdbapi.com/?i=tt3896198&apikey=<YOUR API KEY>
 
 {
 	"Title": "Guardians of the Galaxy Vol. 2",

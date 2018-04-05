@@ -1,4 +1,4 @@
-https://data.tmsapi.com/v1.1/movies/showings?startDate=2018-02-15&zip=22903&api_key=e3rbxbs6mjp8mhk9wfz8e6gv
+https://data.tmsapi.com/v1.1/movies/showings?startDate=2018-02-15&zip=22903&days=1&api_key=<YOUR API KEY>
 
 [{
 		"tmsId": "MV008898760000",
