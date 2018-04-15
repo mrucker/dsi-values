@@ -18,9 +18,9 @@ exports.handler = (event, context, callback) => {
     
     //getTmsDataFromDynamo().then(tmsData => {
     getTmsDataFromWeb().then(tmsData => {
-         //writeTmsMoviesData(tmsData);
+         writeTmsMoviesData(tmsData);
          writeTmsMoviesShowtimesData(tmsData);
-         //writeTmsMoviesTheatersData(tmsData);
+         writeTmsMoviesTheatersData(tmsData);
      }).catch(console.log);
 };
 
@@ -222,26 +222,30 @@ function getOmdbDataFromWeb(tmsTitle, tmsYear, tmsType) {
             return;
         }
 
-        const req = https.request(url, res => {
-            let body = '';
+        setTimeout(function() {
+            const req = https.request(url, res => {
+                let body = '';
+    
+                res.setEncoding('utf8');
+                res.on('data', (chunk) => body += chunk);
+                res.on('end', () => {                 
 
-            res.setEncoding('utf8');
-            res.on('data', (chunk) => body += chunk);
-            res.on('end', () => {                 
-                
-                omdbCache[url] = JSON.parse(body);
-                
-                if(areSameTitle(tmsTitle, omdbCache[url].Title)){
-                    resolve(clone(omdbCache[url]));
-                }
-                else { 
-                    getOmdbDataFromWeb(removeLastWord(tmsTitle), tmsYear).then(resolve);
-                }
+                    omdbCache[url] = JSON.parse(body);
+
+                    if(areSameTitle(tmsTitle, omdbCache[url].Title)){
+                        resolve(clone(omdbCache[url]));
+                    }
+                    else { 
+                        getOmdbDataFromWeb(removeLastWord(tmsTitle), tmsYear).then(resolve);
+                    }
+                });
             });
-        });
-
-        req.on('error', reject);
-        req.end();
+    
+            req.on('error', reject);
+            req.end();
+            
+        }, 1000/process.env.maxRequestsPerSecond);
+        
     });
 }
 

@@ -1,0 +1,50 @@
+Human-Computer Interaction (HCI) journal
+    > https://www.tandfonline.com/toc/hhci20/current
+    > 2016 Impact Factor 4.667
+    > 6 issues published a year
+
+Computer Human Interaction (CHI) 2019
+    > https://chi2018.acm.org/
+    > https://scholar.google.es/citations?view_op=top_venues&hl=en&vq=eng_humancomputerinteraction
+    > https://dl.acm.org/event.cfm?id=RE151
+    > In 2017 they had 2400 submissions with 25% accept rate [https://dl.acm.org/citation.cfm?id=3025453#source]
+    > In 2017 they had 453 citations
+    > May 4-9 2019 Glasgow, UK
+    > Papers due around September
+
+User Modeling, Adaptation and Personalization Conference (UMAP) 2019
+    > http://www.um.org/umap2018/
+    > The papers here seem to be inline with my own research
+    > In 2017 they had 80 submissions with 36% accept rate [https://dl.acm.org/citation.cfm?id=3079628]
+    > In 2017 they had 23 citations
+    > Moderate number of citations for proceedings in 2016, not so much in 2017
+    > Papers due around March
+
+User Modeling and User-Adapted Interaction (UMUAI) journal
+    > https://link.springer.com/journal/11257
+    > Impact factor of 3.625
+    > 4 issues published a year
+    > No page limit since it is a journal
+
+Neural Information Processing Systems (NIPS)
+    > https://nips.cc/
+    > https://medium.com/machine-learning-in-practice/nips-accepted-papers-stats-26f124843aa0
+    > https://nips.cc/Conferences/2015/PaperInformation/EvaluationCriteria
+    > Acceptance rate in 2015 was 21% [https://twitter.com/Hassan_Sawaf/status/674012958981165056]
+    > Papers due around May
+
+International Conference on Machine Learning (ICML)
+    > https://icml.cc/
+    > Acceptance rate appears to be around 23% [http://brenocon.com/icml_accepts_plot.html]
+    > Papers due around February
+
+ACM Conference Series on Recommender Systems (RecSys)
+    > https://recsys.acm.org/recsys17/
+    > In 2017 they had 125 submissions with 21% acceptance rate [https://dl.acm.org/citation.cfm?id=3109859&preflayout=flat#source]
+    > Papers due around May
+
+Arxiv
+    > https://arxiv.org/help/general
+    > a public repository for unpublished research papers
+    > hosted and maintained by Cornell University Library
+    > Welcomes papers on an incredibly wide array of subject matter

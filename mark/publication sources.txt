@@ -1,0 +1,15 @@
+RECOMMENDERS    
+    (2006 McNee 1)         -- CHI                  , CS, 3 authors, University of Minnesota (Group Lens)
+    (2006 McNee 2)         -- CHI                  , CS, 3 authors, University of Minnesota (Group Lens)
+    (2010 Knijnenburg)     -- UMUAI                , CS, 5 authors, Academia & Industry
+    (2011 Pu)              -- RecSys               , CS, 3 authors, Swiss Federal Institute of Technology & Hong Kong Baptist University
+    (2016 Wang)            -- CIKM                 , CS, 3 authors, University of Virginia (UVA)
+
+IRL
+    (2008 Ziebart Behav)   -- AAAI Spring Symposium, CS, 4 authors, CMU
+    (2008 Ziebart Maxent)  -- AAAI                 , CS, 4 authors, CMU
+    (2004 Abbeel)          -- ICML                 , CS, 2 authors, Stanford
+    (2011 Levine)          -- NIPS                 , CS, 3 authors, Stanford & University of Washington
+    
+MOTIVATION
+    (2018 Hamari)          -- UMUAI                , ??, 3 authors, Tampere University
