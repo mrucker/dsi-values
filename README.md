@@ -4,7 +4,7 @@ An online movie recommendation site for Charlottesville Virginia.
 
 # Algorithms
   * Linear contextual bandit modification of Abbeel and Ngs "Apprenticeship Learning via Inverse Reinforcement Learning".
-  * Kernel-based contextual bandit modification of Abbeel and Ngs "Apprenticeship Learning via Inverse Reinforcement Learning".
+  * Kernel contextual bandit modification of Abbeel and Ngs "Apprenticeship Learning via Inverse Reinforcement Learning".
  
 # Algorithm Implmenetation
   * Both algorithms have been implemented in JS and run on the client's machine.
