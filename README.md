@@ -7,14 +7,14 @@ An online movie recommendation site for Charlottesville Virginia using Contextua
  
 # Algorithm Implmenetation
   * Algorithms are implemented in JS and run in the client's web-browser.
-  * All algorithm vector and matrix calculations are done via TensorFlow.js.
+  * All vector and matrix calculations are done utilizing TensorFlow.js.
 
 # Hosting
-  * The HTML and JS for the site is stored on S3 and uses AWS's CDN, DNS and Certificate Manager.
-  * The production version of this project is deployed at [https://dsi.markrucker.net](https://dsi.markrucker.net)
+  * The HTML and JS files for the site are stored on S3 and use AWS's CDN, DNS and Certificate Manager for requests.
+  * The live version of this project is deployed at [https://dsi.markrucker.net](https://dsi.markrucker.net)
   
 # Data
-  * The backend of this site runs a nightly job to query the next weeks movies from: 
+  * The backend of this site runs a nightly job to query the next week's movies from: 
     * [http://developer.tmsapi.com/](http://developer.tmsapi.com/)
     * [http://www.omdbapi.com/](http://www.omdbapi.com/)
   * The nightly backend job stores the movie data in AWS's No-SQL DynamoDB
